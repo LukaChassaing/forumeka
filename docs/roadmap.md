@@ -1,6 +1,6 @@
 # Roadmap
 
-## Sprint 0 — Pipeline d'extraction CLI ⬅ en cours
+## Sprint 0 — Pipeline d'extraction CLI ✅ mergé
 
 **Objectif** : 10 threads Caradisiac indexés à la main, JSON inspectés, prompt itéré.
 
@@ -9,11 +9,11 @@
 - [x] Schéma Zod aligné sur §3 du doc d'archi
 - [x] Prompt Claude Haiku avec les 4 statuts (§4)
 - [x] Respect robots.txt + rate-limit + UA identifiable
-- [ ] Parser Caradisiac affiné sur threads réels (sélecteurs à valider)
+- [x] Parser Caradisiac affiné sur le markup Invision Power Board (multi-page, multi-pistes par thread)
 - [ ] 10 threads indexés, prompt itéré, qualité jugée acceptable
 - [ ] Sortie : un dossier `out/` avec 10 `ExtractionRun` JSON
 
-## Sprint 1 — DB + ingestion
+## Sprint 1 — DB + ingestion ⬅ en cours
 
 - [ ] Schéma Drizzle des 9 tables (§3)
 - [ ] Migrations versionnées
