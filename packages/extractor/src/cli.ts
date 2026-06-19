@@ -60,9 +60,11 @@ program
     const file = join(opts.out, `${hash}.json`);
     await writeFile(file, JSON.stringify(run, null, 2), 'utf8');
     console.error(`✓ ${file}`);
-    console.error(
-      `  ${extraction.pistes.length} piste(s) — ${extraction.resolved_in_thread ? 'résolu' : 'non résolu'}`,
-    );
+    for (const item of extraction.problemes) {
+      console.error(
+        `  "${item.probleme.titre}" — ${item.pistes.length} piste(s) — ${item.resolved_in_thread ? 'résolu' : 'non résolu'}`,
+      );
+    }
   });
 
 program.parseAsync().catch((err) => {
