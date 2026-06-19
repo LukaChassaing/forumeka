@@ -2,28 +2,25 @@ import * as cheerio from 'cheerio';
 import type { ParsedThread, ThreadPost } from '../types.js';
 
 /**
- * Parser Caradisiac (forum.caradisiac.com — moteur vBulletin).
- * Squelette à affiner sur des threads réels au Sprint 0.
+ * Parser Caradisiac (forum.caradisiac.com — moteur Invision Power Board).
  */
 export function parseCaradisiac(html: string, url: string): ParsedThread {
   const $ = cheerio.load(html);
 
   const titre =
-    $('h1.threadtitle, h1[class*="title"]').first().text().trim() ||
+    $('h1.ipsType_pageTitle').first().text().replace(/\s+/g, ' ').trim() ||
     $('title').text().split(/[-|]/)[0]?.trim() ||
     'Sans titre';
 
   const posts: ThreadPost[] = [];
-  $('li.postbit, div.post, .postcontainer').each((_, el) => {
+  $('article.cPost').each((_, el) => {
     const $el = $(el);
     const author =
-      $el.find('.username, .author, [class*="user"]').first().text().trim() || 'anonyme';
-    const date =
-      $el.find('.date, .postdate, time').first().attr('datetime') ??
-      $el.find('.date, .postdate, time').first().text().trim() ??
-      null;
+      $el.find('aside.cAuthorPane .cAuthorPane_author').first().text().replace(/\s+/g, ' ').trim() ||
+      'anonyme';
+    const date = $el.find('.ipsComment_meta time, time[datetime]').first().attr('datetime') ?? null;
     const content = $el
-      .find('.postcontent, .content, blockquote.postcontent')
+      .find('[data-role="commentContent"]')
       .first()
       .text()
       .replace(/\s+/g, ' ')
@@ -32,9 +29,14 @@ export function parseCaradisiac(html: string, url: string): ParsedThread {
   });
 
   const nb_pages = (() => {
-    const pager = $('.pagination a, .pagenav a').last().text().trim();
-    const n = Number.parseInt(pager, 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    let max = 1;
+    $('.ipsPagination_page a').each((_, a) => {
+      const href = $(a).attr('href') ?? '';
+      if (!href.startsWith(url.split(/[?#]/)[0] ?? url)) return;
+      const n = Number.parseInt($(a).text().trim(), 10);
+      if (Number.isFinite(n) && n > max) max = n;
+    });
+    return max;
   })();
 
   const date_thread = posts[0]?.date ?? null;
