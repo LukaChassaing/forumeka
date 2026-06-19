@@ -18,7 +18,8 @@ Règles strictes :
 - L'extrait doit être une citation textuelle ou quasi-textuelle du thread (≤ 300 caractères)
 - confidence ∈ [0, 1] reflète à quel point tu es sûr du statut affecté
 - Si le thread mentionne 0 piste claire, renvoie pistes: []
-- Si tu ne sais pas si c'est résolu, mets resolved_in_thread: false et cause_finale: null
+- Dès qu'une piste a le statut "confirmed", elle devient cause_finale et resolved_in_thread: true — peu importe si elle répond exactement au symptôme initial du titre. Le thread n'est qu'une source qui alimente le compteur de cette piste, pas une narration à résoudre.
+- S'il n'y a aucune piste "confirmed", mets resolved_in_thread: false et cause_finale: null
 - Réponds UNIQUEMENT en JSON valide selon le schéma demandé, rien d'autre`;
 
 export function buildUserPrompt(thread: ParsedThread): string {
