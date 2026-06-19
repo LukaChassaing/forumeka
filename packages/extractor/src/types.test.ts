@@ -37,7 +37,11 @@ describe('ExtractionSchema', () => {
           resolved_in_thread: false,
         },
         {
-          probleme: { titre: 'Bruit distribution', vehicules: ['Trafic G9U'], symptomes: ['claquement'] },
+          probleme: {
+            titre: 'Bruit distribution',
+            vehicules: ['Trafic G9U'],
+            symptomes: ['claquement'],
+          },
           pistes: [
             {
               titre: 'Galet tendeur',

@@ -16,8 +16,12 @@ export function parseCaradisiac(html: string, url: string): ParsedThread {
   $('article.cPost').each((_, el) => {
     const $el = $(el);
     const author =
-      $el.find('aside.cAuthorPane .cAuthorPane_author').first().text().replace(/\s+/g, ' ').trim() ||
-      'anonyme';
+      $el
+        .find('aside.cAuthorPane .cAuthorPane_author')
+        .first()
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim() || 'anonyme';
     const date = $el.find('.ipsComment_meta time, time[datetime]').first().attr('datetime') ?? null;
     const content = $el
       .find('[data-role="commentContent"]')
