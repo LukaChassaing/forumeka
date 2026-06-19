@@ -23,11 +23,16 @@ export const PisteExtraiteSchema = z.object({
 });
 export type PisteExtraite = z.infer<typeof PisteExtraiteSchema>;
 
-export const ExtractionSchema = z.object({
+export const ExtractionItemSchema = z.object({
   probleme: ProblemeSchema,
   pistes: z.array(PisteExtraiteSchema),
   cause_finale: z.string().nullable(),
   resolved_in_thread: z.boolean(),
+});
+export type ExtractionItem = z.infer<typeof ExtractionItemSchema>;
+
+export const ExtractionSchema = z.object({
+  problemes: z.array(ExtractionItemSchema).min(1),
 });
 export type Extraction = z.infer<typeof ExtractionSchema>;
 

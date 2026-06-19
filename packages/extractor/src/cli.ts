@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { fetchAllowed } from './fetch.js';
-import { parseThread } from './parsers/index.js';
+import { fetchAndParseThread } from './pipeline.js';
 import { extractFromThread } from './extract.js';
 import type { ExtractionRun } from './types.js';
 
@@ -30,8 +30,7 @@ program
   .description('Parse un thread depuis son URL et affiche le JSON normalisé')
   .argument('<url>')
   .action(async (url: string) => {
-    const html = await fetchAllowed(url);
-    const thread = parseThread(html, url);
+    const thread = await fetchAndParseThread(url);
     console.log(JSON.stringify(thread, null, 2));
   });
 
@@ -42,9 +41,8 @@ program
   .option('-o, --out <dir>', 'Répertoire de sortie', 'out')
   .option('--no-save', 'Affiche sur stdout au lieu de sauvegarder')
   .action(async (url: string, opts: { out: string; save: boolean }) => {
-    const html = await fetchAllowed(url);
-    const thread = parseThread(html, url);
-    console.error(`→ ${thread.posts.length} posts parsés, appel LLM…`);
+    const thread = await fetchAndParseThread(url);
+    console.error(`→ ${thread.posts.length} posts parsés (${thread.nb_pages} page(s)), appel LLM…`);
     const { model, extraction } = await extractFromThread(thread);
     const run: ExtractionRun = {
       schema_version: 1,
@@ -62,9 +60,11 @@ program
     const file = join(opts.out, `${hash}.json`);
     await writeFile(file, JSON.stringify(run, null, 2), 'utf8');
     console.error(`✓ ${file}`);
-    console.error(
-      `  ${extraction.pistes.length} piste(s) — ${extraction.resolved_in_thread ? 'résolu' : 'non résolu'}`,
-    );
+    for (const item of extraction.problemes) {
+      console.error(
+        `  "${item.probleme.titre}" — ${item.pistes.length} piste(s) — ${item.resolved_in_thread ? 'résolu' : 'non résolu'}`,
+      );
+    }
   });
 
 program.parseAsync().catch((err) => {

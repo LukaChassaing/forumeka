@@ -31,6 +31,12 @@ async function getRobots(origin: string, ua: string) {
   return parser;
 }
 
+export function buildPageUrl(url: string, page: number): string {
+  if (page <= 1) return url;
+  const base = url.endsWith('/') ? url.slice(0, -1) : url;
+  return `${base}/page/${page}/`;
+}
+
 export interface FetchOptions {
   userAgent?: string;
   rateLimitMs?: number;
