@@ -1,0 +1,11 @@
+{
+  "name": "@forumeka/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo \"(web) implémenté Sprint 2\"",
+    "lint": "echo \"(web) no lint yet\"",
+    "typecheck": "echo \"(web) no typecheck yet\""
+  }
+}
