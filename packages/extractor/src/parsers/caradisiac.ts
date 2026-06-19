@@ -29,14 +29,9 @@ export function parseCaradisiac(html: string, url: string): ParsedThread {
   });
 
   const nb_pages = (() => {
-    let max = 1;
-    $('.ipsPagination_page a').each((_, a) => {
-      const href = $(a).attr('href') ?? '';
-      if (!href.startsWith(url.split(/[?#]/)[0] ?? url)) return;
-      const n = Number.parseInt($(a).text().trim(), 10);
-      if (Number.isFinite(n) && n > max) max = n;
-    });
-    return max;
+    const pages = $('ul.ipsPagination[data-pages]').first().attr('data-pages');
+    const n = Number.parseInt(pages ?? '', 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
   })();
 
   const date_thread = posts[0]?.date ?? null;
