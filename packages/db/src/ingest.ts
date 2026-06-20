@@ -8,6 +8,28 @@ import { embedOne } from './embeddings.js';
 const DEDUP_SIMILARITY_THRESHOLD = 0.85;
 const DEDUP_DISTANCE_THRESHOLD = 1 - DEDUP_SIMILARITY_THRESHOLD;
 
+function slugify(titre: string): string {
+  return (
+    titre
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'probleme'
+  );
+}
+
+async function uniqueSlug(db: Db, titre: string): Promise<string> {
+  const base = slugify(titre);
+  let candidate = base;
+  let attempt = 1;
+  while (await db.query.problemes.findFirst({ where: (p, { eq }) => eq(p.slug, candidate) })) {
+    attempt += 1;
+    candidate = `${base}-${attempt}`;
+  }
+  return candidate;
+}
+
 export interface IngestResult {
   threadId: string;
   problemeIds: string[];
@@ -74,6 +96,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
         await db
           .insert(problemes)
           .values({
+            slug: await uniqueSlug(db, item.probleme.titre),
             titre: item.probleme.titre,
             vehicules: item.probleme.vehicules,
             symptomes: item.probleme.symptomes,

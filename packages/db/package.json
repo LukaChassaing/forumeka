@@ -10,7 +10,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./schema": "./dist/schema.js"
+    "./schema": "./dist/schema.js",
+    "./client": "./dist/client.js",
+    "./queries": "./dist/queries.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
