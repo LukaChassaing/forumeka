@@ -13,8 +13,8 @@ forumeka/
 ├── apps/
 │   └── web/                 # Next.js 15 — Sprint 2
 ├── packages/
-│   ├── extractor/           # CLI d'extraction (Sprint 0) ⬅ en cours
-│   └── db/                  # Schéma Drizzle partagé (Sprint 1)
+│   ├── extractor/           # CLI d'extraction (Sprint 0) ✅
+│   └── db/                  # Schéma Drizzle partagé (Sprint 1) ⬅ en cours
 └── docs/
     ├── architecture.md      # Cadrage technique complet
     └── roadmap.md           # État sprint par sprint
@@ -37,4 +37,4 @@ Détails et décisions : [docs/architecture.md](docs/architecture.md).
 
 ## État
 
-Sprint 0 en cours. Voir [docs/roadmap.md](docs/roadmap.md).
+Sprint 0 mergé (CLI d'extraction). Sprint 1 en cours (DB + ingestion). Voir [docs/roadmap.md](docs/roadmap.md).
