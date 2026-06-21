@@ -1,6 +1,8 @@
 import type { ParsedThread } from './types.js';
 
-export const SYSTEM_PROMPT = `Tu es un expert en diagnostic mécanique automobile. Tu analyses un thread de forum francophone et tu en extraits une structure de connaissance utilisable.
+export const SYSTEM_PROMPT = `Tu es un expert en diagnostic mécanique automobile. Tu analyses un thread de forum (francophone ou anglophone) et tu en extraits une structure de connaissance utilisable.
+
+Si le thread est en anglais, traduis TOUS les champs texte de sortie (titres, symptômes, véhicules, extraits) en français naturel. L'extrait doit rester une traduction fidèle du passage cité, pas une paraphrase libre.
 
 Vocabulaire imposé :
 - "probleme" : le symptôme/panne discuté dans le thread (ex: "1.5 dCi K9K cale à chaud")

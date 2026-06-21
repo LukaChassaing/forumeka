@@ -41,6 +41,7 @@ export default async function PistePage({ params }: { params: Promise<{ id: stri
             </a>
             <p className="mt-1 text-sm text-ink-500">
               {m.forum} — {STATUT_LABEL[m.statutDansThread]}
+              {m.traduit && ' — traduit de l’anglais'}
             </p>
             {m.extrait && <p className="mt-2 text-sm text-ink-700">« {m.extrait} »</p>}
           </li>

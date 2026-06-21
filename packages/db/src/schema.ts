@@ -124,6 +124,8 @@ export const threads = pgTable('threads', {
   resolvedInThread: boolean('resolved_in_thread').notNull().default(false),
   causeFinaleId: uuid('cause_finale_id').references(() => pistes.id),
   rawContentCompressed: bytea('raw_content_compressed'),
+  langueOrigine: text('langue_origine').notNull().default('fr'),
+  traduit: boolean('traduit').notNull().default(false),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   indexedAt: timestamp('indexed_at', { withTimezone: true }).notNull().defaultNow(),
 });

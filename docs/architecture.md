@@ -83,6 +83,8 @@ Contenu forum scrapé et indexé.
 | `resolved_in_thread`     | BOOLEAN             |                                 |
 | `cause_finale_id`        | UUID FK pistes NULL | la piste qui a résolu le thread |
 | `raw_content_compressed` | BYTEA               | contenu original compressé      |
+| `langue_origine`         | TEXT                | ex: `fr`, `en` — défaut `fr`     |
+| `traduit`                | BOOLEAN             | `true` si `extrait`/synthèse traduits en FR — affiché en UI |
 | `metadata`               | JSONB               |                                 |
 | `indexed_at`             | TIMESTAMPTZ         |                                 |
 
@@ -319,8 +321,8 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
 ## 12. Décisions tranchées (ne pas rediscuter)
 
 - **Périmètre véhicules** : auto seulement au démarrage. Pas de moto/utilitaire.
-- **Scraping forums** : fetch _à la demande user uniquement_, pas de crawl massif. Respect robots.txt, User-Agent identifiable, rate-limiting. Pas de redistribution du contenu brut, seulement synthèse + lien source.
-- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com).
+- **Scraping forums** : ~~fetch à la demande user uniquement~~ **mise à jour post-MVP** : découverte automatisée de threads autorisée pour le seed, mais bornée (liste de sous-forums ciblés, pas de crawl illimité) et rate-limitée. Respect robots.txt, User-Agent identifiable. Pas de redistribution du contenu brut, seulement synthèse + lien source.
+- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Extension** : forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
 - **Confidentialité** : **public-only**. Pas de mode "indexation privée". L'effet réseau de la base mutualisée est central.
 - **Auth** : **obligatoire dès la première recherche**, magic link via email.
 - **Gating** : ultra-limité sur free tier pour protéger les coûts LLM. Free tier détaillé à calibrer.
@@ -345,7 +347,6 @@ Total : 7-9 week-ends, en pointillé sur 3-4 mois.
 
 - MCP server custom pour Claude Code → agent admin (reporté post-MVP)
 - Extension navigateur "indexer ce thread en 1 clic"
-- Adapters forums anglophones (TDIClub, Bimmerforums, Cummins Forum)
 - Ingestion YouTube (transcripts vidéos diag) et Reddit
 - Pool d'embeddings partagés
 - Modèle économique précis (freemium + abonnement, ordre 3-5€/mois)

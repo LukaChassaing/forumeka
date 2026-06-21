@@ -105,6 +105,7 @@ export interface ThreadMention {
   statutDansThread: 'confirmed' | 'tested_neutral' | 'tested_negative' | 'mentioned';
   extrait: string | null;
   confidence: number;
+  traduit: boolean;
 }
 
 export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promise<ThreadMention[]> {
@@ -117,6 +118,7 @@ export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promis
       statutDansThread: threadPisteMentions.statutDansThread,
       extrait: threadPisteMentions.extrait,
       confidence: threadPisteMentions.confidence,
+      traduit: threads.traduit,
     })
     .from(threadPisteMentions)
     .innerJoin(threads, eq(threads.id, threadPisteMentions.threadId))

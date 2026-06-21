@@ -50,6 +50,7 @@ export const ParsedThreadSchema = z.object({
   date_thread: z.string().nullable(),
   nb_pages: z.number().int().positive(),
   posts: z.array(ThreadPostSchema),
+  langue_origine: z.enum(['fr', 'en']).default('fr'),
 });
 export type ParsedThread = z.infer<typeof ParsedThreadSchema>;
 

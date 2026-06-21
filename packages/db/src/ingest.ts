@@ -78,6 +78,8 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           dateThread: run.thread.date_thread,
           nbPages: run.thread.nb_pages,
           resolvedInThread: run.extraction.problemes.some((p) => p.resolved_in_thread),
+          langueOrigine: run.thread.langue_origine,
+          traduit: run.thread.langue_origine !== 'fr',
         })
         .returning({ id: threads.id })
     )[0]!.id;

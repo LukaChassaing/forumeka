@@ -44,10 +44,20 @@
 - [x] Build Command Vercel versionné dans `apps/web/vercel.json`
 - [ ] Seed réel de 30-50 threads en prod (reste un seed de démo pour l'instant)
 
+## Sprint 4 — Découverte automatisée + multi-forum + traduction
+
+**Objectif** : ne plus dépendre d'une liste d'URLs saisie à la main, étendre au-delà de Caradisiac, traduire le contenu anglophone.
+
+- [ ] Module de découverte bornée de threads sur Caradisiac (parcours sous-forums ciblés diesel/essence/pannes, rate-limité, respect robots.txt)
+- [ ] Parser pour un 2e forum anglophone (TDIClub en premier candidat — à valider)
+- [ ] Pipeline de traduction EN→FR (Claude Haiku ou Sonnet) appliqué à l'extrait/synthèse avant stockage
+- [ ] Colonnes `threads.langue_origine` + `threads.traduit` (migration) et badge "traduit" en UI sur la page piste
+- [ ] Lancer le seed réel de 30-50 threads (mix Caradisiac + forum EN) via ce pipeline automatisé
+- [ ] Recalcul taux de succès (§7) — formule blend app/forum, **dépriorisé tant que le volume d'avis app est trop faible**
+
 ## Sprint 3 — Couche communautaire
 
 - [ ] Notation user post-réparation (`worked` / `failed` / `partial`)
 - [ ] Bookmarks
 - [ ] Commentaires sur thread/piste
-- [ ] Recalcul taux de succès (§7) — formule de départ
 - [ ] Modération manuelle basique
