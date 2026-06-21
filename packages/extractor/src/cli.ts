@@ -70,7 +70,9 @@ program
 
 program
   .command('discover')
-  .description('Découverte bornée des threads listés sur une page de sous-forum (Caradisiac/Bimmerforums)')
+  .description(
+    'Découverte bornée des threads listés sur une page de sous-forum (Caradisiac/Bimmerforums)',
+  )
   .argument('<url-sous-forum>')
   .option('-p, --max-pages <n>', 'Nombre max de pages de listing à parcourir', '5')
   .action(async (url: string, opts: { maxPages: string }) => {

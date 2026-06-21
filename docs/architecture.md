@@ -72,21 +72,21 @@ Variantes textuelles d'une piste pour matching et désambiguïsation.
 
 Contenu forum scrapé et indexé.
 
-| Colonne                  | Type                | Notes                           |
-| ------------------------ | ------------------- | ------------------------------- |
-| `id`                     | UUID PK             |                                 |
-| `url`                    | TEXT UNIQUE         |                                 |
-| `forum`                  | TEXT                | ex: `forum-auto.com`            |
-| `titre`                  | TEXT                |                                 |
-| `date_thread`            | DATE                |                                 |
-| `nb_pages`               | INTEGER             |                                 |
-| `resolved_in_thread`     | BOOLEAN             |                                 |
-| `cause_finale_id`        | UUID FK pistes NULL | la piste qui a résolu le thread |
-| `raw_content_compressed` | BYTEA               | contenu original compressé      |
-| `langue_origine`         | TEXT                | ex: `fr`, `en` — défaut `fr`     |
+| Colonne                  | Type                | Notes                                                       |
+| ------------------------ | ------------------- | ----------------------------------------------------------- |
+| `id`                     | UUID PK             |                                                             |
+| `url`                    | TEXT UNIQUE         |                                                             |
+| `forum`                  | TEXT                | ex: `forum-auto.com`                                        |
+| `titre`                  | TEXT                |                                                             |
+| `date_thread`            | DATE                |                                                             |
+| `nb_pages`               | INTEGER             |                                                             |
+| `resolved_in_thread`     | BOOLEAN             |                                                             |
+| `cause_finale_id`        | UUID FK pistes NULL | la piste qui a résolu le thread                             |
+| `raw_content_compressed` | BYTEA               | contenu original compressé                                  |
+| `langue_origine`         | TEXT                | ex: `fr`, `en` — défaut `fr`                                |
 | `traduit`                | BOOLEAN             | `true` si `extrait`/synthèse traduits en FR — affiché en UI |
-| `metadata`               | JSONB               |                                 |
-| `indexed_at`             | TIMESTAMPTZ         |                                 |
+| `metadata`               | JSONB               |                                                             |
+| `indexed_at`             | TIMESTAMPTZ         |                                                             |
 
 ### `thread_piste_mentions`
 
