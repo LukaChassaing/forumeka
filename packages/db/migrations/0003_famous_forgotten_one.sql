@@ -1,0 +1,1 @@
+ALTER TABLE "thread_piste_mentions" ADD COLUMN "post_url" text;

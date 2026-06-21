@@ -32,10 +32,10 @@ export default async function PistePage({ params }: { params: Promise<{ id: stri
         {mentions.map((m) => (
           <li key={m.threadId} className="rounded border border-ink-100 bg-white p-4">
             <a
-              href={m.url}
+              href={m.postUrl ?? m.url}
               target="_blank"
               rel="noreferrer"
-              className="text-ink-900 hover:underline"
+              className="font-medium text-blue-700 underline hover:text-blue-900"
             >
               {m.titre}
             </a>

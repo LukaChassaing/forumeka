@@ -8,6 +8,26 @@ import { embed } from './embeddings.js';
 const DEDUP_SIMILARITY_THRESHOLD = 0.85;
 const DEDUP_DISTANCE_THRESHOLD = 1 - DEDUP_SIMILARITY_THRESHOLD;
 
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Retrouve le post phpBB dont le contenu correspond à l'extrait cité par l'extraction, pour lier au bon message plutôt qu'à la page 1 du thread. */
+function findPostUrl(
+  threadUrl: string,
+  posts: { content: string; post_id?: string | null }[],
+  extrait: string | null | undefined,
+): string | undefined {
+  if (!extrait) return undefined;
+  const needle = normalize(extrait);
+  const post = posts.find((p) => p.post_id && normalize(p.content).includes(needle));
+  if (!post?.post_id) return undefined;
+  const u = new URL(threadUrl);
+  u.searchParams.set('p', post.post_id.replace(/^p/, ''));
+  u.hash = post.post_id;
+  return u.toString();
+}
+
 function slugify(titre: string): string {
   return (
     titre
@@ -160,6 +180,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           statutDansThread: piste.statut,
           extrait: piste.extrait,
           confidence: piste.confidence,
+          postUrl: findPostUrl(run.thread.url, run.thread.posts, piste.extrait),
         })
         .onConflictDoNothing();
 

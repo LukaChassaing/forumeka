@@ -44,7 +44,8 @@ export function parsePhpbb(html: string, url: string, forum: string): ParsedThre
       'anonyme';
     const date = $el.find('p.author time[datetime]').first().attr('datetime') ?? null;
     const content = $el.find('div.content').first().text().replace(/\s+/g, ' ').trim();
-    if (content.length > 20) posts.push({ author, date: date || null, content });
+    const postId = $el.attr('id') || null;
+    if (content.length > 20) posts.push({ author, date: date || null, content, post_id: postId });
   });
 
   const postsPerPage = detectPostsPerPage($);

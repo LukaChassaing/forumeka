@@ -100,6 +100,7 @@ export async function getPisteById(db: Db, pisteId: string) {
 export interface ThreadMention {
   threadId: string;
   url: string;
+  postUrl: string | null;
   forum: string;
   titre: string;
   statutDansThread: 'confirmed' | 'tested_neutral' | 'tested_negative' | 'mentioned';
@@ -113,6 +114,7 @@ export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promis
     .select({
       threadId: threads.id,
       url: threads.url,
+      postUrl: threadPisteMentions.postUrl,
       forum: threads.forum,
       titre: threads.titre,
       statutDansThread: threadPisteMentions.statutDansThread,

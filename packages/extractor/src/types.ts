@@ -40,6 +40,8 @@ export const ThreadPostSchema = z.object({
   author: z.string(),
   date: z.string().nullable(),
   content: z.string(),
+  /** Ancre phpBB du post (ex: "p123456"), pour lier directement vers le bon message. */
+  post_id: z.string().nullable().optional(),
 });
 export type ThreadPost = z.infer<typeof ThreadPostSchema>;
 

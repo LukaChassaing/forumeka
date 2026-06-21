@@ -143,6 +143,7 @@ export const threadPisteMentions = pgTable(
     statutDansThread: statutPisteEnum('statut_dans_thread').notNull(),
     extrait: text('extrait'),
     confidence: real('confidence').notNull(),
+    postUrl: text('post_url'),
   },
   (table) => [unique().on(table.threadId, table.pisteId)],
 );
