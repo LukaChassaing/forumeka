@@ -24,14 +24,15 @@
 - [x] CLI admin `forumeka-db ingest|enqueue|worker|refresh-stats`
 - [ ] Seed réel de 30-50 threads (à faire en continu via le CLI)
 
-## Sprint 2 — Web app minimale
+## Sprint 2 — Web app minimale ✅ mergé
 
-- [ ] Next 15 App Router + Tailwind, design system beige/gris/noir/blanc
-- [ ] Auth.js + Resend magic link
-- [ ] Page recherche `/` (autocomplete véhicule + symptôme)
-- [ ] Page résultats `/diag/[slug]`
-- [ ] Page piste `/piste/[id]` avec sources
-- [ ] Pattern d'affichage "X sur N <verbe>" (§6)
+- [x] Next 15 App Router + Tailwind, design system beige/gris/noir/blanc
+- [x] Auth.js + Resend magic link
+- [x] Page recherche `/`
+- [x] Page résultats `/diag/[slug]`
+- [x] Page piste `/piste/[id]` avec sources
+- [x] Pattern d'affichage "X sur N <verbe>" (§6)
+- [ ] Autocomplete véhicule + symptôme sur la page recherche (à affiner)
 
 ## Sprint 3 — Couche communautaire
 
