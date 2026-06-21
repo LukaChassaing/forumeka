@@ -13,15 +13,16 @@
 - [ ] 10 threads indexés, prompt itéré, qualité jugée acceptable
 - [ ] Sortie : un dossier `out/` avec 10 `ExtractionRun` JSON
 
-## Sprint 1 — DB + ingestion ⬅ en cours
+## Sprint 1 — DB + ingestion ✅ mergé
 
-- [ ] Schéma Drizzle des 9 tables (§3)
-- [ ] Migrations versionnées
-- [ ] Extensions PG : `pgvector`, FTS `tsvector`
-- [ ] Worker `pg-boss` qui ingère les JSON du Sprint 0
-- [ ] Déduplication v1 (similarity matching Voyage + alias)
-- [ ] Vue matérialisée `piste_stats`
-- [ ] CLI admin `forumeka ingest <fichier.json>`
+- [x] Schéma Drizzle des 9 tables (§3) + `users` minimal (FK, détaillé Sprint 2)
+- [x] Migrations versionnées (`packages/db/migrations`)
+- [x] Extensions PG : `pgvector`, `pg_trgm` ; colonnes `tsvector` en place (triggers de génération à affiner)
+- [x] Worker `pg-boss` qui ingère les `ExtractionRun` (queue + handler)
+- [x] Déduplication v1 (similarity matching Voyage `voyage-3-lite`, seuil 0.85, + `piste_aliases`)
+- [x] Vue matérialisée `piste_stats`
+- [x] CLI admin `forumeka-db ingest|enqueue|worker|refresh-stats`
+- [ ] Seed réel de 30-50 threads (à faire en continu via le CLI)
 
 ## Sprint 2 — Web app minimale
 
