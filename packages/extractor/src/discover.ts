@@ -39,19 +39,36 @@ function extractBimmerforumsThreadLinks(html: string, baseUrl: string): string[]
   return [...urls];
 }
 
-/** Threads phpBB ressortent en doublon (lien titre + lien dernier message) avec un fragment `#pN` ; on normalise. */
+/**
+ * Threads phpBB ressortent en doublon sur un listing : lien titre (`?t=N`), lien dernier message
+ * (`?p=N`, ancre vers une page quelconque du thread), et liens de pagination directs (`?t=N&start=X`)
+ * pour les threads à rallonge. On déduplique sur l'identifiant de topic `t=` et on ignore les liens
+ * `?p=` sans `t=` correspondant déjà connu (ils seront résolus en doublon par l'URL canonique au fetch).
+ */
 function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
   const $ = cheerio.load(html);
-  const urls = new Set<string>();
+  const byTopicId = new Map<string, string>();
+  const postOnlyLinks = new Set<string>();
+
   $('a[href*="viewtopic.php"]').each((_, el) => {
     const href = $(el).attr('href');
     if (!href) return;
     const u = new URL(href, baseUrl);
     u.hash = '';
     u.searchParams.delete('sid');
-    urls.add(u.toString());
+    const t = u.searchParams.get('t');
+    if (t) {
+      if (!byTopicId.has(t)) {
+        const canonical = new URL(u);
+        canonical.searchParams.delete('start');
+        byTopicId.set(t, canonical.toString());
+      }
+    } else {
+      postOnlyLinks.add(u.toString());
+    }
   });
-  return [...urls];
+
+  return [...byTopicId.values(), ...postOnlyLinks];
 }
 
 export interface DiscoverOptions {
