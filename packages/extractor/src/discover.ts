@@ -41,14 +41,15 @@ function extractBimmerforumsThreadLinks(html: string, baseUrl: string): string[]
 
 /**
  * Threads phpBB ressortent en doublon sur un listing : lien titre (`?t=N`), lien dernier message
- * (`?p=N`, ancre vers une page quelconque du thread), et liens de pagination directs (`?t=N&start=X`)
- * pour les threads à rallonge. On déduplique sur l'identifiant de topic `t=` et on ignore les liens
- * `?p=` sans `t=` correspondant déjà connu (ils seront résolus en doublon par l'URL canonique au fetch).
+ * (`?p=N`, ancre vers une page quelconque du thread — toujours accompagné du lien titre `?t=N` sur
+ * la même ligne), et liens de pagination directs (`?t=N&start=X`) pour les threads à rallonge. On
+ * déduplique sur l'identifiant de topic `t=` et on ignore les liens `?p=` sans `t=` : chaque ligne du
+ * listing porte de toute façon un lien titre `?t=N`, donc ces liens `?p=` n'apportent aucun thread
+ * supplémentaire.
  */
 function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
   const $ = cheerio.load(html);
   const byTopicId = new Map<string, string>();
-  const postOnlyLinks = new Set<string>();
 
   $('a[href*="viewtopic.php"]').each((_, el) => {
     const href = $(el).attr('href');
@@ -57,18 +58,13 @@ function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
     u.hash = '';
     u.searchParams.delete('sid');
     const t = u.searchParams.get('t');
-    if (t) {
-      if (!byTopicId.has(t)) {
-        const canonical = new URL(u);
-        canonical.searchParams.delete('start');
-        byTopicId.set(t, canonical.toString());
-      }
-    } else {
-      postOnlyLinks.add(u.toString());
-    }
+    if (!t || byTopicId.has(t)) return;
+    const canonical = new URL(u);
+    canonical.searchParams.delete('start');
+    byTopicId.set(t, canonical.toString());
   });
 
-  return [...byTopicId.values(), ...postOnlyLinks];
+  return [...byTopicId.values()];
 }
 
 export interface DiscoverOptions {
