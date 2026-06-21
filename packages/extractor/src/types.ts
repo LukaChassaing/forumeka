@@ -10,7 +10,7 @@ export type StatutPiste = z.infer<typeof StatutPisteSchema>;
 
 export const ProblemeSchema = z.object({
   titre: z.string().min(3).max(200),
-  vehicules: z.array(z.string()).min(1),
+  vehicules: z.array(z.string()),
   symptomes: z.array(z.string()).min(1),
 });
 export type Probleme = z.infer<typeof ProblemeSchema>;
@@ -32,7 +32,7 @@ export const ExtractionItemSchema = z.object({
 export type ExtractionItem = z.infer<typeof ExtractionItemSchema>;
 
 export const ExtractionSchema = z.object({
-  problemes: z.array(ExtractionItemSchema).min(1),
+  problemes: z.array(ExtractionItemSchema),
 });
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
