@@ -1,9 +1,18 @@
 import * as cheerio from 'cheerio';
 import { fetchAllowed } from './fetch.js';
 
-/** Construit l'URL de la page N d'un listing de sous-forum (style ?page=N, commun aux deux plateformes). */
+const PHPBB_HOSTS = ['forum4x4.org'];
+const TOPICS_PER_PHPBB_LISTING_PAGE = 50;
+
+/** Construit l'URL de la page N d'un listing de sous-forum (style ?page=N, ou ?start=N pour phpBB). */
 function buildListingPageUrl(url: string, page: number): string {
   if (page <= 1) return url;
+  const host = new URL(url).hostname.replace(/^www\./, '');
+  if (PHPBB_HOSTS.some((h) => host.endsWith(h))) {
+    const u = new URL(url);
+    u.searchParams.set('start', String((page - 1) * TOPICS_PER_PHPBB_LISTING_PAGE));
+    return u.toString();
+  }
   const sep = url.includes('?') ? '&' : '?';
   return `${url}${sep}page=${page}`;
 }
@@ -30,6 +39,21 @@ function extractBimmerforumsThreadLinks(html: string, baseUrl: string): string[]
   return [...urls];
 }
 
+/** Threads phpBB ressortent en doublon (lien titre + lien dernier message) avec un fragment `#pN` ; on normalise. */
+function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
+  const $ = cheerio.load(html);
+  const urls = new Set<string>();
+  $('a[href*="viewtopic.php"]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href) return;
+    const u = new URL(href, baseUrl);
+    u.hash = '';
+    u.searchParams.delete('sid');
+    urls.add(u.toString());
+  });
+  return [...urls];
+}
+
 export interface DiscoverOptions {
   /** Nombre max de pages de listing à parcourir (borne le crawl, §12 architecture). */
   maxPages?: number;
@@ -49,7 +73,9 @@ export async function discoverThreads(
     ? extractCaradisiacThreadLinks
     : host.endsWith('bimmerforums.com')
       ? extractBimmerforumsThreadLinks
-      : null;
+      : PHPBB_HOSTS.some((h) => host.endsWith(h))
+        ? extractPhpbbThreadLinks
+        : null;
   if (!extractor) throw new Error(`Aucune découverte disponible pour ${host}`);
 
   const found = new Set<string>();
