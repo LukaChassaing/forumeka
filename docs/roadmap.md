@@ -34,6 +34,16 @@
 - [x] Pattern d'affichage "X sur N <verbe>" (§6)
 - [ ] Autocomplete véhicule + symptôme sur la page recherche (à affiner)
 
+## MVP déployé en production ✅
+
+- [x] Hébergement Vercel (`forumeka.vercel.app`) + Neon Postgres (`eu-central-1`, Frankfurt)
+- [x] Migrations + extensions PG + vue `piste_stats` appliquées sur Neon
+- [x] Bug critique corrigé : middleware d'auth forcé en runtime Node.js (Edge ne peut pas ouvrir de socket TCP vers Postgres, cassait toute validation de session)
+- [x] Resend configuré avec domaine vérifié `mail.forumeka.fr`, magic link testé en prod
+- [x] Données de démo seedées (1 problème Clio 3, 2 pistes, 1 thread)
+- [ ] Build Command Vercel à versionner dans le repo (actuellement seulement dans les settings dashboard, pas reproductible)
+- [ ] Seed réel de 30-50 threads en prod (reste un seed de démo pour l'instant)
+
 ## Sprint 3 — Couche communautaire
 
 - [ ] Notation user post-réparation (`worked` / `failed` / `partial`)

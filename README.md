@@ -44,4 +44,16 @@ Détails et décisions : [docs/architecture.md](docs/architecture.md).
 
 ## État
 
-Sprint 0 et 1 mergés (CLI d'extraction, DB + ingestion). Sprint 2 à venir (web app). Voir [docs/roadmap.md](docs/roadmap.md).
+Sprints 0, 1 et 2 mergés. **MVP déployé en production** : [forumeka.vercel.app](https://forumeka.vercel.app) (Vercel + Neon Frankfurt, auth magic link via Resend sur `mail.forumeka.fr`). Sprint 3 (couche communautaire) à venir. Voir [docs/roadmap.md](docs/roadmap.md).
+
+### Déploiement (Vercel)
+
+- **Hosting** : Vercel, projet `forumeka`, Root Directory = `apps/web`, Production branch = `main`.
+- **DB** : Neon Postgres (région `eu-central-1`, pgvector + pg_trgm activés), connectée via `DATABASE_URL` (host pooler).
+- **Email** : Resend, domaine vérifié `mail.forumeka.fr` (DNS chez IONOS), `RESEND_FROM=noreply@mail.forumeka.fr`.
+- **Build Command custom** (le monorepo pnpm n'est pas buildé par défaut par Vercel — ses dépendances workspace doivent être construites avant l'app) :
+  ```
+  cd ../.. && pnpm --filter @forumeka/extractor build && pnpm --filter @forumeka/db build && pnpm --filter @forumeka/web build
+  ```
+  ⚠️ Cette commande n'est aujourd'hui définie que dans les settings du dashboard Vercel, pas versionnée dans le repo.
+- **Variables d'env requises** : `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`.

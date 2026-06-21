@@ -305,6 +305,17 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
 | Embeddings     | **Voyage `voyage-3-lite`**                              | Validé : prix bas, FR correct, indépendant d'OpenAI                             |
 | Hosting        | **Vercel** (déploiement git push)                       |                                                                                 |
 
+### 11bis. Déploiement — points d'attention monorepo
+
+- **Middleware Auth.js en runtime Node.js obligatoire** : `export const runtime = 'nodejs'` dans `apps/web/src/middleware.ts`. Le runtime Edge par défaut de Next.js ne peut pas ouvrir de socket TCP, donc `postgres-js` (utilisé par `DrizzleAdapter`) ne peut jamais valider une session depuis le middleware — bug silencieux en prod, aucune erreur de build.
+- **Imports `@forumeka/db` par sous-chemin** (`@forumeka/db/client`, `@forumeka/db/schema`) plutôt que le barrel `@forumeka/db` dans tout code potentiellement bundlé en Edge — le barrel réexporte du code Node-only (`pg-boss`, etc.) qui casse le build Edge.
+- **Build Vercel** : Root Directory = `apps/web`, mais Vercel ne construit pas les packages workspace (`packages/db`, `packages/extractor`) par défaut. Build Command à override en dashboard :
+  ```
+  cd ../.. && pnpm --filter @forumeka/extractor build && pnpm --filter @forumeka/db build && pnpm --filter @forumeka/web build
+  ```
+  (ordre topologique : `extractor` est une dépendance de `db`, qui est une dépendance de `web`)
+- **Migrations Neon depuis un environnement HTTPS-only** : si l'environnement d'exécution ne permet pas le TCP sortant (port 5432), utiliser le driver HTTP `@neondatabase/serverless` (`neon()` + `sql.query(rawSql)`) plutôt que `drizzle-kit migrate` / `postgres-js`.
+
 ## 12. Décisions tranchées (ne pas rediscuter)
 
 - **Périmètre véhicules** : auto seulement au démarrage. Pas de moto/utilitaire.
