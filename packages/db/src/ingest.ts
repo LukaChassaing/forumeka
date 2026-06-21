@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type { ExtractionRun } from '@forumeka/extractor/types';
 import type { Db } from './client.js';
 import { problemes, pistes, pisteAliases, threads, threadPisteMentions } from './schema.js';
-import { embedOne } from './embeddings.js';
+import { embed } from './embeddings.js';
 
 /** Similarité cosine minimale pour rattacher à une entité existante plutôt que d'en créer une (§9 architecture). */
 const DEDUP_SIMILARITY_THRESHOLD = 0.85;
@@ -87,9 +87,20 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
   const problemeIds: string[] = [];
   const pisteIds: string[] = [];
 
-  for (const item of run.extraction.problemes) {
-    const problemeText = `${item.probleme.titre} — ${item.probleme.symptomes.join(', ')}`;
-    const problemeEmbedding = await embedOne(problemeText);
+  // Un seul appel batché à Voyage pour tout le run (le tier gratuit limite à 3 req/min).
+  const problemeTexts = run.extraction.problemes.map(
+    (item) => `${item.probleme.titre} — ${item.probleme.symptomes.join(', ')}`,
+  );
+  const pisteTexts = run.extraction.problemes.flatMap((item) =>
+    item.pistes.map((piste) => piste.titre),
+  );
+  const allEmbeddings = await embed([...problemeTexts, ...pisteTexts]);
+  const problemeEmbeddings = allEmbeddings.slice(0, problemeTexts.length);
+  const pisteEmbeddings = allEmbeddings.slice(problemeTexts.length);
+  let pisteEmbeddingIndex = 0;
+
+  for (const [itemIndex, item] of run.extraction.problemes.entries()) {
+    const problemeEmbedding = problemeEmbeddings[itemIndex]!;
     const closestProbleme = await findClosest(db, problemes, problemeEmbedding);
 
     const problemeId =
@@ -114,7 +125,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
     let causeFinalePisteId: string | undefined;
 
     for (const piste of item.pistes) {
-      const pisteEmbedding = await embedOne(piste.titre);
+      const pisteEmbedding = pisteEmbeddings[pisteEmbeddingIndex++]!;
       const closestPiste = await findClosest(db, pistes, pisteEmbedding, {
         column: 'problemeId',
         value: problemeId,
