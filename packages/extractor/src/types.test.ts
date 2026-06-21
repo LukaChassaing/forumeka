@@ -86,8 +86,8 @@ describe('ExtractionSchema', () => {
     expect(ko.success).toBe(false);
   });
 
-  it('rejette un tableau de problemes vide', () => {
-    const ko = ExtractionSchema.safeParse({ problemes: [] });
-    expect(ko.success).toBe(false);
+  it('accepte un tableau de problemes vide (thread sans panne identifiable)', () => {
+    const ok = ExtractionSchema.safeParse({ problemes: [] });
+    expect(ok.success).toBe(true);
   });
 });
