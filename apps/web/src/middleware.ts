@@ -1,5 +1,7 @@
 import { auth } from '@/auth';
 
+export const runtime = 'nodejs';
+
 const PUBLIC_PATHS = ['/', '/connexion'];
 
 export default auth((req) => {
