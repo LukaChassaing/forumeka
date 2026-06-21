@@ -92,15 +92,16 @@ Contenu forum scrapé et indexé.
 
 Lien entre un thread et une piste, avec le statut tel qu'extrait du thread.
 
-| Colonne              | Type                  | Notes                         |
-| -------------------- | --------------------- | ----------------------------- |
-| `id`                 | UUID PK               |                               |
-| `thread_id`          | UUID FK               |                               |
-| `piste_id`           | UUID FK               |                               |
-| `statut_dans_thread` | ENUM                  | voir section 4                |
-| `extrait`            | TEXT                  | citation pertinente <300 char |
-| `confidence`         | REAL                  | 0-1 confiance de l'extraction |
-| UNIQUE               | (thread_id, piste_id) |                               |
+| Colonne              | Type                  | Notes                                                                                                                                           |
+| -------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | UUID PK               |                                                                                                                                                 |
+| `thread_id`          | UUID FK               |                                                                                                                                                 |
+| `piste_id`           | UUID FK               |                                                                                                                                                 |
+| `statut_dans_thread` | ENUM                  | voir section 4                                                                                                                                  |
+| `extrait`            | TEXT                  | citation pertinente <300 char                                                                                                                   |
+| `confidence`         | REAL                  | 0-1 confiance de l'extraction                                                                                                                   |
+| `post_url`           | TEXT NULL             | lien deep-link vers le post phpBB précis citant `extrait` (fallback `threads.url` si absent — extraction antérieure à la capture des `post_id`) |
+| UNIQUE               | (thread_id, piste_id) |                                                                                                                                                 |
 
 ### `piste_ratings`
 
@@ -317,12 +318,15 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
   ```
   (ordre topologique : `extractor` est une dépendance de `db`, qui est une dépendance de `web`)
 - **Migrations Neon depuis un environnement HTTPS-only** : si l'environnement d'exécution ne permet pas le TCP sortant (port 5432), utiliser le driver HTTP `@neondatabase/serverless` (`neon()` + `sql.query(rawSql)`) plutôt que `drizzle-kit migrate` / `postgres-js`.
+- **CLI `forumeka-db` (ingest/refresh-stats)** : toujours fermer la connexion (`db.$client.end()` dans un `finally`), sinon le process Node ne se termine jamais (pool `postgres-js` qui garde le socket ouvert).
+- **Voyage embeddings** : batcher tous les textes d'un run (problèmes + pistes) en un seul appel `embed([...])`, jamais un appel par entité — le tier gratuit limite à 3 req/min et des appels séquentiels échouent silencieusement en 429. Retry avec backoff (respecte `Retry-After`) indispensable même en batché.
+- **`piste_stats` (vue matérialisée)** : penser à `REFRESH MATERIALIZED VIEW CONCURRENTLY` après chaque ingestion (`pnpm --filter @forumeka/db exec forumeka-db refresh-stats`), sinon l'UI affiche des stats périmées sans erreur visible.
 
 ## 12. Décisions tranchées (ne pas rediscuter)
 
 - **Périmètre véhicules** : auto seulement au démarrage. Pas de moto/utilitaire.
 - **Scraping forums** : ~~fetch à la demande user uniquement~~ **mise à jour post-MVP** : découverte automatisée de threads autorisée pour le seed, mais bornée (liste de sous-forums ciblés, pas de crawl illimité) et rate-limitée. Respect robots.txt, User-Agent identifiable. Pas de redistribution du contenu brut, seulement synthèse + lien source.
-- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Extension** : forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
+- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Extension validée (PR #8)** : phpBB3 générique (parser dédié, ex. forum4x4.org) — réutilisable pour tout forum basé sur ce moteur sans nouveau parser. Forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
 - **Confidentialité** : **public-only**. Pas de mode "indexation privée". L'effet réseau de la base mutualisée est central.
 - **Auth** : **obligatoire dès la première recherche**, magic link via email.
 - **Gating** : ultra-limité sur free tier pour protéger les coûts LLM. Free tier détaillé à calibrer.

@@ -44,7 +44,11 @@ Détails et décisions : [docs/architecture.md](docs/architecture.md).
 
 ## État
 
-Sprints 0, 1 et 2 mergés. **MVP déployé en production** : [forumeka.vercel.app](https://forumeka.vercel.app) (Vercel + Neon Frankfurt, auth magic link via Resend sur `mail.forumeka.fr`). Sprint 3 (couche communautaire) à venir. Voir [docs/roadmap.md](docs/roadmap.md).
+Sprints 0, 1 et 2 mergés. **MVP déployé en production** : [forumeka.vercel.app](https://forumeka.vercel.app) (Vercel + Neon Frankfurt, auth magic link via Resend sur `mail.forumeka.fr`).
+
+**En cours (PR #8, non mergée)** : extension du pipeline d'extraction à un 2e forum, **forum4x4.org** (moteur phpBB3), avec un parser générique réutilisable pour tout forum phpBB3. Pilote de 5 threads validé de bout en bout (discover → extract → ingest → refresh-stats → affichage UI). Corrections associées : batching + retry des appels Voyage (évite les 429 silencieux), fermeture propre des connexions DB en CLI, lien de chaque source forum vers le post précis cité (deep-link `?p=...#p...`) plutôt que la page 1 du thread.
+
+Sprint 3 (couche communautaire) à venir. Voir [docs/roadmap.md](docs/roadmap.md).
 
 ### Déploiement (Vercel)
 
