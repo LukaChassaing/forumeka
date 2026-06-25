@@ -44,7 +44,7 @@
 - [x] Build Command Vercel versionné dans `apps/web/vercel.json`
 - [ ] Seed réel de 30-50 threads en prod (reste un seed de démo pour l'instant)
 
-## Sprint 4 — Découverte automatisée + multi-forum 🟡 en cours (PR #8, non mergée)
+## Sprint 4 — Découverte automatisée + multi-forum 🟡 en cours (PR #8 mergée le 25/06)
 
 **Objectif** : ne plus dépendre d'une liste d'URLs saisie à la main, étendre au-delà de Caradisiac.
 
@@ -54,7 +54,7 @@
 - [x] Pilote de 5 threads forum4x4.org : discover → extract → ingest → refresh-stats → affichage UI, validé de bout en bout
 - [x] Deep-link vers le post précis citant l'extrait (`thread_piste_mentions.post_url`) au lieu de la page 1 du thread
 - [x] Suppression de Voyage/pgvector : recherche et dédup 100% trigramme (`pg_trgm`), plus aucune dépendance SaaS externe
-- [ ] **Merger PR #8**
+- [x] Merger PR #8
 - [ ] Décider : backfill `post_url` pour les 3 threads déjà ingérés sans cette donnée (`e01032f3`, `33999ceb`, `990d341d`), ou laisser tel quel jusqu'au prochain seed
 - [ ] Lancer le seed réel de 30-50 threads (mix Caradisiac + forum4x4.org) via ce pipeline
 - [ ] Parser pour un forum anglophone (TDIClub) + pipeline de traduction EN→FR — reporté après le seed FR, le badge "traduit" et les colonnes sont déjà prêts
@@ -63,12 +63,11 @@
 ## Prochaines étapes pour raccourcir le temps de déploiement du MVP (ordre conseillé)
 
 1. **Confirmer que l'UI s'affiche correctement** après `pnpm install` lancé depuis la racine du repo (le bug d'affichage "claqué" signalé venait probablement d'un `pnpm install` lancé dans `apps/web` au lieu de la racine, cassant les symlinks workspace de Tailwind/Next).
-2. **Merger PR #8** une fois CI verte (prettier/tsc/vitest) — débloque tout le reste.
-3. **Décider du backfill `post_url`** pour les 3 threads forum4x4.org déjà ingérés (sinon leurs liens forum restent vers la page 1 jusqu'au prochain seed de ces mêmes threads).
-4. **Lancer le seed réel de 30-50 threads** (mix Caradisiac + forum4x4.org) — c'est le seul item bloquant restant des Sprints 1/4 et la condition pour que l'app ait un contenu réellement utile en prod (actuellement seed de démo : 1 problème, 2 pistes).
-5. **Appliquer les migrations + `refresh-stats` en prod** (Neon prod, pas seulement la branche `seed-test`) une fois le seed validé.
-6. **Vérifier `apps/web/.env.local`** existe avec `DATABASE_URL` pointant vers la bonne instance Neon avant tout test UI local.
-7. Seulement après un MVP avec contenu réel en prod : reprendre Sprint 3 (notation/bookmarks/commentaires) et l'extension forum anglophone + traduction.
+2. **Décider du backfill `post_url`** pour les 3 threads forum4x4.org déjà ingérés (sinon leurs liens forum restent vers la page 1 jusqu'au prochain seed de ces mêmes threads).
+3. **Lancer le seed réel de 30-50 threads** (mix Caradisiac + forum4x4.org) — c'est le seul item bloquant restant des Sprints 1/4 et la condition pour que l'app ait un contenu réellement utile en prod (actuellement seed de démo : 1 problème, 2 pistes).
+4. **Appliquer les migrations + `refresh-stats` en prod** (Neon prod, pas seulement la branche `seed-test`) une fois le seed validé.
+5. **Vérifier `apps/web/.env.local`** existe avec `DATABASE_URL` pointant vers la bonne instance Neon avant tout test UI local.
+6. Seulement après un MVP avec contenu réel en prod : reprendre Sprint 3 (notation/bookmarks/commentaires) et l'extension forum anglophone + traduction.
 
 ## Sprint 3 — Couche communautaire
 
