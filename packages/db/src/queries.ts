@@ -1,6 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import type { Db } from './client.js';
-import { problemes, pisteAliases, threads, threadPisteMentions } from './schema.js';
+import { problemes, pistes, pisteAliases, threads, threadPisteMentions } from './schema.js';
 
 export interface ProblemeSearchResult {
   id: string;
@@ -8,16 +8,24 @@ export interface ProblemeSearchResult {
   titre: string;
   vehicules: string[];
   symptomes: string[];
+  nbPistes: number;
 }
 
-/** Seuil de similarité trigramme (pg_trgm) sous lequel un mot n'est pas considéré comme une correspondance. */
-const TRGM_SIMILARITY_THRESHOLD = 0.3;
+/** Seuil de word_similarity (pg_trgm) sous lequel un mot n'est pas considéré comme une correspondance. */
+const TRGM_SIMILARITY_THRESHOLD = 0.4;
+
+/** Sous cette longueur, le trigramme est trop bruité (ex. "clio" matche des titres sans rapport) : on reste sur le substring exact. */
+const MIN_WORD_LENGTH_FOR_FUZZY = 5;
 
 /**
  * Recherche par mots (v1) — autocomplete véhicule + symptôme (§6 architecture).
- * La requête est découpée en mots ; chaque mot doit matcher (substring OU similarité trigramme)
- * au moins une des colonnes (titre / véhicules / symptômes), tous les mots étant requis (AND).
- * Permet à "kia esp" de matcher "Kia Sorento — voyant ESP" sans que la phrase entière soit un substring.
+ * La requête est découpée en mots ; chaque mot doit matcher (substring, et pour les mots de 5
+ * caractères ou plus en plus du word_similarity trigramme) au moins une des colonnes (titre /
+ * véhicules / symptômes) ou un extrait de thread cité pour une piste du problème, tous les mots
+ * étant requis (AND). Permet à "kia esp" de matcher "Kia Sorento — voyant ESP" sans que la phrase
+ * entière soit un substring. `word_similarity` (et non `similarity`) compare le mot à la meilleure
+ * sous-séquence du texte plutôt qu'au texte entier, ce qui permet de matcher "allumé" dans "voyant
+ * ESP OFF s'allume" malgré la conjugaison/accent différents.
  */
 export async function searchProblemes(
   db: Db,
@@ -29,13 +37,23 @@ export async function searchProblemes(
 
   const wordConditions = words.map((word) => {
     const pattern = `%${word}%`;
+    const fuzzy = word.length >= MIN_WORD_LENGTH_FOR_FUZZY;
     return sql`(
       ${problemes.titre} ILIKE ${pattern}
-      OR similarity(${problemes.titre}, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.titre}) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
       OR ${problemes.vehicules}::text ILIKE ${pattern}
-      OR similarity(${problemes.vehicules}::text, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.vehicules}::text) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
       OR ${problemes.symptomes}::text ILIKE ${pattern}
-      OR similarity(${problemes.symptomes}::text, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.symptomes}::text) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+      OR EXISTS (
+        SELECT 1 FROM ${pistes}
+        JOIN ${threadPisteMentions} ON ${threadPisteMentions.pisteId} = ${pistes.id}
+        WHERE ${pistes.problemeId} = ${problemes.id}
+          AND (
+            ${threadPisteMentions.extrait} ILIKE ${pattern}
+            ${fuzzy ? sql`OR word_similarity(${word}, ${threadPisteMentions.extrait}) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+          )
+      )
     )`;
   });
 
@@ -46,15 +64,20 @@ export async function searchProblemes(
       titre: problemes.titre,
       vehicules: problemes.vehicules,
       symptomes: problemes.symptomes,
+      nbPistes: sql<number>`(SELECT count(*) FROM ${pistes} WHERE ${pistes.problemeId} = ${sql.raw('"problemes"."id"')})`,
     })
     .from(problemes)
     .where(sql.join(wordConditions, sql` AND `))
     .limit(limit);
-  return rows;
+  return rows.map((r) => ({ ...r, nbPistes: Number(r.nbPistes) }));
 }
 
 export async function getProblemeBySlug(db: Db, slug: string) {
   return db.query.problemes.findFirst({ where: (p, { eq: eqOp }) => eqOp(p.slug, slug) });
+}
+
+export async function getProblemeById(db: Db, id: string) {
+  return db.query.problemes.findFirst({ where: (p, { eq: eqOp }) => eqOp(p.id, id) });
 }
 
 export interface PisteWithStats {
