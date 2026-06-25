@@ -296,18 +296,18 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
 
 ## 11. Stack technique
 
-| Couche         | Choix                                                   | Note                                                                            |
-| -------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Frontend / API | **Next.js 15 App Router + TypeScript**                  | SSR pour SEO crucial                                                            |
-| Styling        | **Tailwind**                                            |                                                                                 |
-| DB             | **Postgres (Neon)**                                     | Free tier généreux, branching gratuit                                           |
+| Couche         | Choix                                                     | Note                                                                            |
+| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Frontend / API | **Next.js 15 App Router + TypeScript**                    | SSR pour SEO crucial                                                            |
+| Styling        | **Tailwind**                                              |                                                                                 |
+| DB             | **Postgres (Neon)**                                       | Free tier généreux, branching gratuit                                           |
 | Extensions PG  | **pg_trgm** (similarité texte) + **FTS natif** (tsvector) | Pas d'Elasticsearch / Qdrant / SaaS d'embeddings à ce stade                     |
-| ORM            | **Drizzle**                                             | **PAS Prisma**. Typesafe, syntaxe SQL-like, colle avec le pattern colonne+JSONB |
-| Auth           | **Auth.js (NextAuth)** + **Resend** magic link          | **PAS Supabase Auth, PAS Clerk**                                                |
-| Queue          | **pg-boss**                                             | Queue dans Postgres, zéro infra additionnelle                                   |
-| LLM extraction | **Claude Haiku** (volume)                               | Coût ~5 centimes par thread                                                     |
-| LLM synthèse   | **Claude Sonnet** (qualité)                             | Pour les requêtes user                                                          |
-| Hosting        | **Vercel** (déploiement git push)                       |                                                                                 |
+| ORM            | **Drizzle**                                               | **PAS Prisma**. Typesafe, syntaxe SQL-like, colle avec le pattern colonne+JSONB |
+| Auth           | **Auth.js (NextAuth)** + **Resend** magic link            | **PAS Supabase Auth, PAS Clerk**                                                |
+| Queue          | **pg-boss**                                               | Queue dans Postgres, zéro infra additionnelle                                   |
+| LLM extraction | **Claude Haiku** (volume)                                 | Coût ~5 centimes par thread                                                     |
+| LLM synthèse   | **Claude Sonnet** (qualité)                               | Pour les requêtes user                                                          |
+| Hosting        | **Vercel** (déploiement git push)                         |                                                                                 |
 
 **Recherche et déduplication** : entièrement basées sur le texte stocké en base (`ILIKE` + `pg_trgm`), pas d'embeddings ni de fournisseur SaaS externe (Voyage retiré — voir §9). Plus simple à opérer, aucun coût ni rate-limit tiers, et suffisant pour le volume actuel.
 
