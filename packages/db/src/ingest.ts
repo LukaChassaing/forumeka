@@ -2,11 +2,29 @@ import { sql } from 'drizzle-orm';
 import type { ExtractionRun } from '@forumeka/extractor/types';
 import type { Db } from './client.js';
 import { problemes, pistes, pisteAliases, threads, threadPisteMentions } from './schema.js';
-import { embedOne } from './embeddings.js';
 
-/** Similarité cosine minimale pour rattacher à une entité existante plutôt que d'en créer une (§9 architecture). */
-const DEDUP_SIMILARITY_THRESHOLD = 0.85;
-const DEDUP_DISTANCE_THRESHOLD = 1 - DEDUP_SIMILARITY_THRESHOLD;
+/** Similarité trigramme (pg_trgm) minimale entre titres pour rattacher à une entité existante plutôt que d'en créer une (§9 architecture). */
+const DEDUP_SIMILARITY_THRESHOLD = 0.5;
+
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Retrouve le post phpBB dont le contenu correspond à l'extrait cité par l'extraction, pour lier au bon message plutôt qu'à la page 1 du thread. */
+function findPostUrl(
+  threadUrl: string,
+  posts: { content: string; post_id?: string | null }[],
+  extrait: string | null | undefined,
+): string | undefined {
+  if (!extrait) return undefined;
+  const needle = normalize(extrait);
+  const post = posts.find((p) => p.post_id && normalize(p.content).includes(needle));
+  if (!post?.post_id) return undefined;
+  const u = new URL(threadUrl);
+  u.searchParams.set('p', post.post_id.replace(/^p/, ''));
+  u.hash = post.post_id;
+  return u.toString();
+}
 
 function slugify(titre: string): string {
   return (
@@ -40,22 +58,19 @@ export interface IngestResult {
 async function findClosest(
   db: Db,
   table: typeof problemes | typeof pistes,
-  embedding: number[],
+  titre: string,
   scope?: { column: 'problemeId'; value: string },
-): Promise<{ id: string; distance: number } | undefined> {
-  const vectorLiteral = `[${embedding.join(',')}]`;
+): Promise<{ id: string; similarity: number } | undefined> {
   const scopeClause = table === pistes && scope ? sql` AND probleme_id = ${scope.value}` : sql``;
   const tableName = table === problemes ? 'problemes' : 'pistes';
-  const rows = await db.execute<{ id: string; distance: number }>(sql`
-    SELECT id, embedding <=> ${vectorLiteral}::vector AS distance
+  const rows = await db.execute<{ id: string; similarity: number }>(sql`
+    SELECT id, similarity(titre, ${titre}) AS similarity
     FROM ${sql.identifier(tableName)}
-    WHERE embedding IS NOT NULL${scopeClause}
-    ORDER BY distance ASC
+    WHERE similarity(titre, ${titre}) > ${DEDUP_SIMILARITY_THRESHOLD}${scopeClause}
+    ORDER BY similarity DESC
     LIMIT 1
   `);
-  const row = rows[0];
-  if (!row || row.distance > DEDUP_DISTANCE_THRESHOLD) return undefined;
-  return row;
+  return rows[0];
 }
 
 /** Ingère un ExtractionRun (sortie de l'extracteur Sprint 0) avec déduplication par similarité (v1). */
@@ -78,6 +93,8 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           dateThread: run.thread.date_thread,
           nbPages: run.thread.nb_pages,
           resolvedInThread: run.extraction.problemes.some((p) => p.resolved_in_thread),
+          langueOrigine: run.thread.langue_origine,
+          traduit: run.thread.langue_origine !== 'fr',
         })
         .returning({ id: threads.id })
     )[0]!.id;
@@ -86,9 +103,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
   const pisteIds: string[] = [];
 
   for (const item of run.extraction.problemes) {
-    const problemeText = `${item.probleme.titre} — ${item.probleme.symptomes.join(', ')}`;
-    const problemeEmbedding = await embedOne(problemeText);
-    const closestProbleme = await findClosest(db, problemes, problemeEmbedding);
+    const closestProbleme = await findClosest(db, problemes, item.probleme.titre);
 
     const problemeId =
       closestProbleme?.id ??
@@ -100,7 +115,6 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
             titre: item.probleme.titre,
             vehicules: item.probleme.vehicules,
             symptomes: item.probleme.symptomes,
-            embedding: problemeEmbedding,
             sourceType: 'llm',
             sourceModel: run.source_model,
           })
@@ -112,8 +126,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
     let causeFinalePisteId: string | undefined;
 
     for (const piste of item.pistes) {
-      const pisteEmbedding = await embedOne(piste.titre);
-      const closestPiste = await findClosest(db, pistes, pisteEmbedding, {
+      const closestPiste = await findClosest(db, pistes, piste.titre, {
         column: 'problemeId',
         value: problemeId,
       });
@@ -126,7 +139,6 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
             .values({
               problemeId,
               titre: piste.titre,
-              embedding: pisteEmbedding,
               sourceType: 'llm',
               sourceModel: run.source_model,
             })
@@ -147,6 +159,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           statutDansThread: piste.statut,
           extrait: piste.extrait,
           confidence: piste.confidence,
+          postUrl: findPostUrl(run.thread.url, run.thread.posts, piste.extrait),
         })
         .onConflictDoNothing();
 

@@ -31,8 +31,16 @@ async function getRobots(origin: string, ua: string) {
   return parser;
 }
 
-export function buildPageUrl(url: string, page: number): string {
+const PHPBB_HOSTS = ['forum4x4.org'];
+
+export function buildPageUrl(url: string, page: number, postsPerPage = 10): string {
   if (page <= 1) return url;
+  const host = new URL(url).hostname.replace(/^www\./, '');
+  if (PHPBB_HOSTS.some((h) => host.endsWith(h))) {
+    const u = new URL(url);
+    u.searchParams.set('start', String((page - 1) * postsPerPage));
+    return u.toString();
+  }
   const base = url.endsWith('/') ? url.slice(0, -1) : url;
   return `${base}/page/${page}/`;
 }

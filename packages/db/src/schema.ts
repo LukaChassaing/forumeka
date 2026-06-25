@@ -12,8 +12,7 @@ import {
   unique,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { vector, tsvector, numrange, bytea } from './columns.js';
-import { EMBEDDING_DIMENSIONS } from './embeddings.js';
+import { tsvector, numrange, bytea } from './columns.js';
 
 export const sourceTypeEnum = pgEnum('source_type', ['human', 'llm', 'user_contribution']);
 export const statutPisteEnum = pgEnum('statut_dans_thread', [
@@ -80,7 +79,6 @@ export const problemes = pgTable('problemes', {
   description: text('description'),
   vehicules: jsonb('vehicules').notNull().$type<string[]>(),
   symptomes: text('symptomes').array().notNull(),
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
   searchVector: tsvector('search_vector'),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   sourceType: sourceTypeEnum('source_type').notNull().default('llm'),
@@ -98,7 +96,6 @@ export const pistes = pgTable('pistes', {
   description: text('description'),
   coutEstimeEur: numrange('cout_estime_eur'),
   difficulte: integer('difficulte'),
-  embedding: vector('embedding', { dimensions: EMBEDDING_DIMENSIONS }),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   sourceType: sourceTypeEnum('source_type').notNull().default('llm'),
   sourceModel: text('source_model'),
@@ -124,6 +121,8 @@ export const threads = pgTable('threads', {
   resolvedInThread: boolean('resolved_in_thread').notNull().default(false),
   causeFinaleId: uuid('cause_finale_id').references(() => pistes.id),
   rawContentCompressed: bytea('raw_content_compressed'),
+  langueOrigine: text('langue_origine').notNull().default('fr'),
+  traduit: boolean('traduit').notNull().default(false),
   metadata: jsonb('metadata').$type<Record<string, unknown>>(),
   indexedAt: timestamp('indexed_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -141,6 +140,7 @@ export const threadPisteMentions = pgTable(
     statutDansThread: statutPisteEnum('statut_dans_thread').notNull(),
     extrait: text('extrait'),
     confidence: real('confidence').notNull(),
+    postUrl: text('post_url'),
   },
   (table) => [unique().on(table.threadId, table.pisteId)],
 );
@@ -197,7 +197,6 @@ export const searchLog = pgTable('search_log', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').references(() => users.id),
   query: text('query').notNull(),
-  queryEmbedding: vector('query_embedding', { dimensions: EMBEDDING_DIMENSIONS }),
   resultsCount: integer('results_count').notNull().default(0),
   clickedThreadId: uuid('clicked_thread_id').references(() => threads.id),
   satisfaction: satisfactionEnum('satisfaction'),

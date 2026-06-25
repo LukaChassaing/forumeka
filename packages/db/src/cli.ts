@@ -25,10 +25,14 @@ program
   .action(async (file: string) => {
     const run = await loadRun(file);
     const db = createDb();
-    const result = await ingestExtractionRun(db, run);
-    console.log(
-      `✓ thread ${result.threadId} — +${result.created.problemes} problème(s), +${result.created.pistes} piste(s)`,
-    );
+    try {
+      const result = await ingestExtractionRun(db, run);
+      console.log(
+        `✓ thread ${result.threadId} — +${result.created.problemes} problème(s), +${result.created.pistes} piste(s)`,
+      );
+    } finally {
+      await db.$client.end();
+    }
   });
 
 program
@@ -60,8 +64,12 @@ program
   .description('Rafraîchit la vue matérialisée piste_stats')
   .action(async () => {
     const db = createDb();
-    await db.execute(REFRESH_PISTE_STATS_SQL);
-    console.log('✓ piste_stats rafraîchie');
+    try {
+      await db.execute(REFRESH_PISTE_STATS_SQL);
+      console.log('✓ piste_stats rafraîchie');
+    } finally {
+      await db.$client.end();
+    }
   });
 
 program.parseAsync().catch((err) => {

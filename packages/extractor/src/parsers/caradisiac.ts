@@ -47,5 +47,6 @@ export function parseCaradisiac(html: string, url: string): ParsedThread {
     date_thread,
     nb_pages,
     posts,
+    langue_origine: 'fr',
   };
 }

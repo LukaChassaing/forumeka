@@ -1,4 +1,4 @@
-import { desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import type { Db } from './client.js';
 import { problemes, pisteAliases, threads, threadPisteMentions } from './schema.js';
 
@@ -10,13 +10,35 @@ export interface ProblemeSearchResult {
   symptomes: string[];
 }
 
-/** Recherche simple par correspondance texte (v1) — autocomplete véhicule + symptôme (§6 architecture). */
+/** Seuil de similarité trigramme (pg_trgm) sous lequel un mot n'est pas considéré comme une correspondance. */
+const TRGM_SIMILARITY_THRESHOLD = 0.3;
+
+/**
+ * Recherche par mots (v1) — autocomplete véhicule + symptôme (§6 architecture).
+ * La requête est découpée en mots ; chaque mot doit matcher (substring OU similarité trigramme)
+ * au moins une des colonnes (titre / véhicules / symptômes), tous les mots étant requis (AND).
+ * Permet à "kia esp" de matcher "Kia Sorento — voyant ESP" sans que la phrase entière soit un substring.
+ */
 export async function searchProblemes(
   db: Db,
   query: string,
   limit = 10,
 ): Promise<ProblemeSearchResult[]> {
-  const pattern = `%${query}%`;
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const wordConditions = words.map((word) => {
+    const pattern = `%${word}%`;
+    return sql`(
+      ${problemes.titre} ILIKE ${pattern}
+      OR similarity(${problemes.titre}, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+      OR ${problemes.vehicules}::text ILIKE ${pattern}
+      OR similarity(${problemes.vehicules}::text, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+      OR ${problemes.symptomes}::text ILIKE ${pattern}
+      OR similarity(${problemes.symptomes}::text, ${word}) > ${TRGM_SIMILARITY_THRESHOLD}
+    )`;
+  });
+
   const rows = await db
     .select({
       id: problemes.id,
@@ -26,13 +48,7 @@ export async function searchProblemes(
       symptomes: problemes.symptomes,
     })
     .from(problemes)
-    .where(
-      or(
-        ilike(problemes.titre, pattern),
-        sql`${problemes.vehicules}::text ILIKE ${pattern}`,
-        sql`${problemes.symptomes}::text ILIKE ${pattern}`,
-      ),
-    )
+    .where(sql.join(wordConditions, sql` AND `))
     .limit(limit);
   return rows;
 }
@@ -100,11 +116,13 @@ export async function getPisteById(db: Db, pisteId: string) {
 export interface ThreadMention {
   threadId: string;
   url: string;
+  postUrl: string | null;
   forum: string;
   titre: string;
   statutDansThread: 'confirmed' | 'tested_neutral' | 'tested_negative' | 'mentioned';
   extrait: string | null;
   confidence: number;
+  traduit: boolean;
 }
 
 export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promise<ThreadMention[]> {
@@ -112,11 +130,13 @@ export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promis
     .select({
       threadId: threads.id,
       url: threads.url,
+      postUrl: threadPisteMentions.postUrl,
       forum: threads.forum,
       titre: threads.titre,
       statutDansThread: threadPisteMentions.statutDansThread,
       extrait: threadPisteMentions.extrait,
       confidence: threadPisteMentions.confidence,
+      traduit: threads.traduit,
     })
     .from(threadPisteMentions)
     .innerJoin(threads, eq(threads.id, threadPisteMentions.threadId))

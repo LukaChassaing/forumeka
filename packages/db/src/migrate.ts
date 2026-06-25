@@ -11,7 +11,6 @@ async function main() {
   const client = postgres(databaseUrl, { max: 1 });
   const db = drizzle(client);
 
-  await client.unsafe('CREATE EXTENSION IF NOT EXISTS vector');
   await client.unsafe('CREATE EXTENSION IF NOT EXISTS pg_trgm');
 
   await migrate(db, { migrationsFolder: './migrations' });
