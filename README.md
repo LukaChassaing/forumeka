@@ -24,7 +24,7 @@ forumeka/
 
 ```bash
 pnpm install
-cp .env.example .env        # remplir ANTHROPIC_API_KEY, VOYAGE_API_KEY, DATABASE_URL
+cp .env.example .env        # remplir ANTHROPIC_API_KEY, DATABASE_URL
 pnpm --filter @forumeka/extractor build
 pnpm --filter @forumeka/extractor exec forumeka extract <url-thread-caradisiac>
 
@@ -38,7 +38,7 @@ pnpm --filter @forumeka/db exec forumeka-db ingest out/<fichier>.json
 
 ## Stack
 
-Next.js 15 · TypeScript · Tailwind · Postgres + pgvector · Drizzle · Auth.js + Resend · pg-boss · Claude Haiku/Sonnet · Voyage embeddings · Vercel + Neon.
+Next.js 15 · TypeScript · Tailwind · Postgres + pg_trgm · Drizzle · Auth.js + Resend · pg-boss · Claude Haiku/Sonnet · Vercel + Neon.
 
 Détails et décisions : [docs/architecture.md](docs/architecture.md).
 
@@ -46,14 +46,14 @@ Détails et décisions : [docs/architecture.md](docs/architecture.md).
 
 Sprints 0, 1 et 2 mergés. **MVP déployé en production** : [forumeka.vercel.app](https://forumeka.vercel.app) (Vercel + Neon Frankfurt, auth magic link via Resend sur `mail.forumeka.fr`).
 
-**En cours (PR #8, non mergée)** : extension du pipeline d'extraction à un 2e forum, **forum4x4.org** (moteur phpBB3), avec un parser générique réutilisable pour tout forum phpBB3. Pilote de 5 threads validé de bout en bout (discover → extract → ingest → refresh-stats → affichage UI). Corrections associées : batching + retry des appels Voyage (évite les 429 silencieux), fermeture propre des connexions DB en CLI, lien de chaque source forum vers le post précis cité (deep-link `?p=...#p...`) plutôt que la page 1 du thread.
+**En cours (PR #8, non mergée)** : extension du pipeline d'extraction à un 2e forum, **forum4x4.org** (moteur phpBB3), avec un parser générique réutilisable pour tout forum phpBB3. Pilote de 5 threads validé de bout en bout (discover → extract → ingest → refresh-stats → affichage UI). Corrections associées : fermeture propre des connexions DB en CLI, lien de chaque source forum vers le post précis cité (deep-link `?p=...#p...`) plutôt que la page 1 du thread.
 
 Sprint 3 (couche communautaire) à venir. Voir [docs/roadmap.md](docs/roadmap.md).
 
 ### Déploiement (Vercel)
 
 - **Hosting** : Vercel, projet `forumeka`, Root Directory = `apps/web`, Production branch = `main`.
-- **DB** : Neon Postgres (région `eu-central-1`, pgvector + pg_trgm activés), connectée via `DATABASE_URL` (host pooler).
+- **DB** : Neon Postgres (région `eu-central-1`, pg_trgm activé), connectée via `DATABASE_URL` (host pooler).
 - **Email** : Resend, domaine vérifié `mail.forumeka.fr` (DNS chez IONOS), `RESEND_FROM=noreply@mail.forumeka.fr`.
 - **Build Command custom** (le monorepo pnpm n'est pas buildé par défaut par Vercel — ses dépendances workspace doivent être construites avant l'app), versionné dans [`apps/web/vercel.json`](apps/web/vercel.json) :
   ```

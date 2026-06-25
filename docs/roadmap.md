@@ -17,9 +17,9 @@
 
 - [x] Schéma Drizzle des 9 tables (§3) + `users` minimal (FK, détaillé Sprint 2)
 - [x] Migrations versionnées (`packages/db/migrations`)
-- [x] Extensions PG : `pgvector`, `pg_trgm` ; colonnes `tsvector` en place (triggers de génération à affiner)
+- [x] Extensions PG : `pg_trgm` ; colonnes `tsvector` en place (triggers de génération à affiner)
 - [x] Worker `pg-boss` qui ingère les `ExtractionRun` (queue + handler)
-- [x] Déduplication v1 (similarity matching Voyage `voyage-3-lite`, seuil 0.85, + `piste_aliases`)
+- [x] Déduplication v1 (similarity matching trigramme `pg_trgm`, seuil 0.5, + `piste_aliases`)
 - [x] Vue matérialisée `piste_stats`
 - [x] CLI admin `forumeka-db ingest|enqueue|worker|refresh-stats`
 - [ ] Seed réel de 30-50 threads (à faire en continu via le CLI)
@@ -53,7 +53,7 @@
 - [x] Module de découverte (`forumeka discover`) avec dédup par `t=` (topic id)
 - [x] Pilote de 5 threads forum4x4.org : discover → extract → ingest → refresh-stats → affichage UI, validé de bout en bout
 - [x] Deep-link vers le post précis citant l'extrait (`thread_piste_mentions.post_url`) au lieu de la page 1 du thread
-- [x] Batching + retry des appels Voyage (évite les 429 silencieux qui donnaient de faux `+0/+0`)
+- [x] Suppression de Voyage/pgvector : recherche et dédup 100% trigramme (`pg_trgm`), plus aucune dépendance SaaS externe
 - [ ] **Merger PR #8**
 - [ ] Décider : backfill `post_url` pour les 3 threads déjà ingérés sans cette donnée (`e01032f3`, `33999ceb`, `990d341d`), ou laisser tel quel jusqu'au prochain seed
 - [ ] Lancer le seed réel de 30-50 threads (mix Caradisiac + forum4x4.org) via ce pipeline

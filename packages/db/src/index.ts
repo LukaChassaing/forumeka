@@ -1,6 +1,5 @@
 export * from './schema.js';
 export * from './client.js';
-export * from './embeddings.js';
 export * from './ingest.js';
 export * from './queries.js';
 export * from './worker.js';

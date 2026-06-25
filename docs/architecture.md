@@ -269,13 +269,15 @@ C'est le défi technique central. Sans déduplication, "Capteur PMH", "sonde PMH
 
 Trois mécanismes complémentaires :
 
-1. **Similarity matching à l'extraction** : nouvelle piste extraite → embedding → si similarité > seuil (0.85+) avec une piste existante, on rattache au lieu de créer
+1. **Similarity matching à l'extraction** : nouvelle piste/problème extrait → similarité trigramme (`pg_trgm`, fonction `similarity(titre, ...)`) avec les titres existants → si similarité > seuil (0.5, à calibrer), on rattache à l'entité existante au lieu d'en créer une nouvelle
 2. **Canonical names + alias** : table `piste_aliases` listant les variantes
 3. **Merge manuel** : interface admin pour fusionner les pistes similaires détectées algorithmiquement
 
 Aucun algo n'est parfait. Le merge manuel reste indispensable, surtout en phase early.
 
 Idem pour les `problemes` : "Clio 3 cale à chaud" et "Clio III calage moteur chaud" doivent matcher. Même approche.
+
+> **Décision (remplace l'approche par embeddings Voyage utilisée jusqu'au Sprint 1)** : le matching trigramme texte-sur-texte est plus simple, ne dépend d'aucun SaaS externe (donc aucun risque de rate-limit/coût/panne tiers), et reste suffisant pour les variantes de formulation proches ("Capteur PMH" / "sonde PMH"). Limite connue : un vrai synonyme sans recoupement de caractères (ex. "CKP sensor" sans aucun mot commun) ne sera pas détecté automatiquement — c'est le rôle du merge manuel et des `piste_aliases` de combler ce cas.
 
 ## 10. Workflow ingestion vs migrations
 
@@ -299,14 +301,15 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
 | Frontend / API | **Next.js 15 App Router + TypeScript**                  | SSR pour SEO crucial                                                            |
 | Styling        | **Tailwind**                                            |                                                                                 |
 | DB             | **Postgres (Neon)**                                     | Free tier généreux, branching gratuit                                           |
-| Extensions PG  | **pgvector** (vector search) + **FTS natif** (tsvector) | Pas d'Elasticsearch / Qdrant à ce stade                                         |
+| Extensions PG  | **pg_trgm** (similarité texte) + **FTS natif** (tsvector) | Pas d'Elasticsearch / Qdrant / SaaS d'embeddings à ce stade                     |
 | ORM            | **Drizzle**                                             | **PAS Prisma**. Typesafe, syntaxe SQL-like, colle avec le pattern colonne+JSONB |
 | Auth           | **Auth.js (NextAuth)** + **Resend** magic link          | **PAS Supabase Auth, PAS Clerk**                                                |
 | Queue          | **pg-boss**                                             | Queue dans Postgres, zéro infra additionnelle                                   |
 | LLM extraction | **Claude Haiku** (volume)                               | Coût ~5 centimes par thread                                                     |
 | LLM synthèse   | **Claude Sonnet** (qualité)                             | Pour les requêtes user                                                          |
-| Embeddings     | **Voyage `voyage-3-lite`**                              | Validé : prix bas, FR correct, indépendant d'OpenAI                             |
 | Hosting        | **Vercel** (déploiement git push)                       |                                                                                 |
+
+**Recherche et déduplication** : entièrement basées sur le texte stocké en base (`ILIKE` + `pg_trgm`), pas d'embeddings ni de fournisseur SaaS externe (Voyage retiré — voir §9). Plus simple à opérer, aucun coût ni rate-limit tiers, et suffisant pour le volume actuel.
 
 ### 11bis. Déploiement — points d'attention monorepo
 
@@ -321,11 +324,20 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
 - **CLI `forumeka-db` (ingest/refresh-stats)** : toujours fermer la connexion (`db.$client.end()` dans un `finally`), sinon le process Node ne se termine jamais (pool `postgres-js` qui garde le socket ouvert).
 - **`piste_stats` (vue matérialisée)** : penser à `REFRESH MATERIALIZED VIEW CONCURRENTLY` après chaque ingestion (`pnpm --filter @forumeka/db exec forumeka-db refresh-stats`), sinon l'UI affiche des stats périmées sans erreur visible.
 
+### 11ter. Contournement Cloudflare pour Caradisiac
+
+Caradisiac (forum cible Sprint 0) renvoie systématiquement un challenge Cloudflare (403) à `fetch`/`undici`, peu importe le User-Agent — un challenge JS ne peut pas être résolu sans exécuter du JS dans un vrai moteur de rendu. Plan retenu pour récupérer son contenu malgré tout :
+
+- **Approche** : navigateur headless (Playwright) à la place de `fetch` pour les requêtes vers les domaines protégés par Cloudflare — laisse le challenge JS s'exécuter normalement comme un vrai navigateur, puis extrait le HTML rendu.
+- **Scope limité** : uniquement pour les domaines qui le nécessitent (Caradisiac) ; `forum4x4.org` et les autres forums sans protection continuent sur `fetch` simple, plus léger et plus rapide.
+- **Rate-limiting renforcé** : un navigateur headless est plus lourd et plus visible qu'un `fetch` — garder un rate-limit prudent et respecter `robots.txt` comme pour les autres forums (§12).
+- **Alternative à garder en tête si Playwright s'avère insuffisant** (Cloudflare durcit parfois ses challenges) : un service tiers de résolution de challenge (ex. FlareSolverr, ou une API de scraping dédiée) — non retenu en premier choix pour rester sans dépendance SaaS externe, dans le même esprit que le retrait de Voyage (§9).
+
 ## 12. Décisions tranchées (ne pas rediscuter)
 
 - **Périmètre véhicules** : auto seulement au démarrage. Pas de moto/utilitaire.
 - **Scraping forums** : ~~fetch à la demande user uniquement~~ **mise à jour post-MVP** : découverte automatisée de threads autorisée pour le seed, mais bornée (liste de sous-forums ciblés, pas de crawl illimité) et rate-limitée. Respect robots.txt, User-Agent identifiable. Pas de redistribution du contenu brut, seulement synthèse + lien source.
-- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Extension validée (PR #8)** : phpBB3 générique (parser dédié, ex. forum4x4.org) — réutilisable pour tout forum basé sur ce moteur sans nouveau parser. Forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
+- **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Bloqué par Cloudflare** (challenge JS systématique, 403 quel que soit le User-Agent/IP — `fetch`/`undici` ne peut pas résoudre un challenge JS) : voir §11ter pour le plan de contournement. **Extension validée (PR #8)** : phpBB3 générique (parser dédié, ex. forum4x4.org, sans protection anti-bot) — réutilisable pour tout forum basé sur ce moteur sans nouveau parser, utilisé en attendant que le contournement Cloudflare soit en place. Forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
 - **Confidentialité** : **public-only**. Pas de mode "indexation privée". L'effet réseau de la base mutualisée est central.
 - **Auth** : **obligatoire dès la première recherche**, magic link via email.
 - **Gating** : ultra-limité sur free tier pour protéger les coûts LLM. Free tier détaillé à calibrer.

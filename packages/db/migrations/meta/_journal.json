@@ -29,6 +29,13 @@
       "when": 1782070666249,
       "tag": "0003_famous_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782387302292,
+      "tag": "0004_tranquil_rockslide",
+      "breakpoints": true
     }
   ]
 }
