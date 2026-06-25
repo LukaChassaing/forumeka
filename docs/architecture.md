@@ -319,7 +319,6 @@ L'agent admin (Claude Code + MCP custom à définir post-MVP) opère via les API
   (ordre topologique : `extractor` est une dépendance de `db`, qui est une dépendance de `web`)
 - **Migrations Neon depuis un environnement HTTPS-only** : si l'environnement d'exécution ne permet pas le TCP sortant (port 5432), utiliser le driver HTTP `@neondatabase/serverless` (`neon()` + `sql.query(rawSql)`) plutôt que `drizzle-kit migrate` / `postgres-js`.
 - **CLI `forumeka-db` (ingest/refresh-stats)** : toujours fermer la connexion (`db.$client.end()` dans un `finally`), sinon le process Node ne se termine jamais (pool `postgres-js` qui garde le socket ouvert).
-- **Voyage embeddings** : batcher tous les textes d'un run (problèmes + pistes) en un seul appel `embed([...])`, jamais un appel par entité — le tier gratuit limite à 3 req/min et des appels séquentiels échouent silencieusement en 429. Retry avec backoff (respecte `Retry-After`) indispensable même en batché.
 - **`piste_stats` (vue matérialisée)** : penser à `REFRESH MATERIALIZED VIEW CONCURRENTLY` après chaque ingestion (`pnpm --filter @forumeka/db exec forumeka-db refresh-stats`), sinon l'UI affiche des stats périmées sans erreur visible.
 
 ## 12. Décisions tranchées (ne pas rediscuter)
