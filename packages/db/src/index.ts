@@ -1,3 +1,6 @@
-// Schéma Drizzle — implémenté au Sprint 1.
-// Voir docs/architecture.md §3 pour la spec des 9 tables.
-export const SCHEMA_VERSION = 0;
+export * from './schema.js';
+export * from './client.js';
+export * from './ingest.js';
+export * from './queries.js';
+export * from './worker.js';
+export { PISTE_STATS_SQL, PISTE_STATS_INDEX_SQL, REFRESH_PISTE_STATS_SQL } from './views.js';

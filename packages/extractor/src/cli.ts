@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { fetchAllowed } from './fetch.js';
 import { fetchAndParseThread } from './pipeline.js';
 import { extractFromThread } from './extract.js';
+import { discoverThreads } from './discover.js';
 import type { ExtractionRun } from './types.js';
 
 const program = new Command();
@@ -60,9 +61,24 @@ program
     const file = join(opts.out, `${hash}.json`);
     await writeFile(file, JSON.stringify(run, null, 2), 'utf8');
     console.error(`✓ ${file}`);
-    console.error(
-      `  ${extraction.pistes.length} piste(s) — ${extraction.resolved_in_thread ? 'résolu' : 'non résolu'}`,
-    );
+    for (const item of extraction.problemes) {
+      console.error(
+        `  "${item.probleme.titre}" — ${item.pistes.length} piste(s) — ${item.resolved_in_thread ? 'résolu' : 'non résolu'}`,
+      );
+    }
+  });
+
+program
+  .command('discover')
+  .description(
+    'Découverte bornée des threads listés sur une page de sous-forum (Caradisiac/Bimmerforums)',
+  )
+  .argument('<url-sous-forum>')
+  .option('-p, --max-pages <n>', 'Nombre max de pages de listing à parcourir', '5')
+  .action(async (url: string, opts: { maxPages: string }) => {
+    const urls = await discoverThreads(url, { maxPages: Number(opts.maxPages) });
+    console.error(`→ ${urls.length} thread(s) trouvé(s)`);
+    for (const u of urls) console.log(u);
   });
 
 program.parseAsync().catch((err) => {

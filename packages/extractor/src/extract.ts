@@ -18,7 +18,8 @@ export interface ExtractResult {
 function stripCodeFences(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (fenced?.[1]) return fenced[1].trim();
-  return text.trim();
+  // Pas de fence fermante (réponse tronquée par max_tokens) : on retire juste l'ouverture.
+  return text.trim().replace(/^```(?:json)?\s*/, '');
 }
 
 export async function extractFromThread(
@@ -32,7 +33,7 @@ export async function extractFromThread(
 
   const message = await client.messages.create({
     model,
-    max_tokens: opts.maxTokens ?? 2048,
+    max_tokens: opts.maxTokens ?? 8192,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: buildUserPrompt(thread) }],
   });

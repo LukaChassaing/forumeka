@@ -1,0 +1,177 @@
+import { desc, eq, sql } from 'drizzle-orm';
+import type { Db } from './client.js';
+import { problemes, pistes, pisteAliases, threads, threadPisteMentions } from './schema.js';
+
+export interface ProblemeSearchResult {
+  id: string;
+  slug: string;
+  titre: string;
+  vehicules: string[];
+  symptomes: string[];
+  nbPistes: number;
+}
+
+/** Seuil de word_similarity (pg_trgm) sous lequel un mot n'est pas considéré comme une correspondance. */
+const TRGM_SIMILARITY_THRESHOLD = 0.4;
+
+/** Sous cette longueur, le trigramme est trop bruité (ex. "clio" matche des titres sans rapport) : on reste sur le substring exact. */
+const MIN_WORD_LENGTH_FOR_FUZZY = 5;
+
+/**
+ * Recherche par mots (v1) — autocomplete véhicule + symptôme (§6 architecture).
+ * La requête est découpée en mots ; chaque mot doit matcher (substring, et pour les mots de 5
+ * caractères ou plus en plus du word_similarity trigramme) au moins une des colonnes (titre /
+ * véhicules / symptômes) ou un extrait de thread cité pour une piste du problème, tous les mots
+ * étant requis (AND). Permet à "kia esp" de matcher "Kia Sorento — voyant ESP" sans que la phrase
+ * entière soit un substring. `word_similarity` (et non `similarity`) compare le mot à la meilleure
+ * sous-séquence du texte plutôt qu'au texte entier, ce qui permet de matcher "allumé" dans "voyant
+ * ESP OFF s'allume" malgré la conjugaison/accent différents.
+ */
+export async function searchProblemes(
+  db: Db,
+  query: string,
+  limit = 10,
+): Promise<ProblemeSearchResult[]> {
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const wordConditions = words.map((word) => {
+    const pattern = `%${word}%`;
+    const fuzzy = word.length >= MIN_WORD_LENGTH_FOR_FUZZY;
+    return sql`(
+      ${problemes.titre} ILIKE ${pattern}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.titre}) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+      OR ${problemes.vehicules}::text ILIKE ${pattern}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.vehicules}::text) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+      OR ${problemes.symptomes}::text ILIKE ${pattern}
+      ${fuzzy ? sql`OR word_similarity(${word}, ${problemes.symptomes}::text) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+      OR EXISTS (
+        SELECT 1 FROM ${pistes}
+        JOIN ${threadPisteMentions} ON ${threadPisteMentions.pisteId} = ${pistes.id}
+        WHERE ${pistes.problemeId} = ${problemes.id}
+          AND (
+            ${threadPisteMentions.extrait} ILIKE ${pattern}
+            ${fuzzy ? sql`OR word_similarity(${word}, ${threadPisteMentions.extrait}) > ${TRGM_SIMILARITY_THRESHOLD}` : sql``}
+          )
+      )
+    )`;
+  });
+
+  const rows = await db
+    .select({
+      id: problemes.id,
+      slug: problemes.slug,
+      titre: problemes.titre,
+      vehicules: problemes.vehicules,
+      symptomes: problemes.symptomes,
+      nbPistes: sql<number>`(SELECT count(*) FROM ${pistes} WHERE ${pistes.problemeId} = ${sql.raw('"problemes"."id"')})`,
+    })
+    .from(problemes)
+    .where(sql.join(wordConditions, sql` AND `))
+    .limit(limit);
+  return rows.map((r) => ({ ...r, nbPistes: Number(r.nbPistes) }));
+}
+
+export async function getProblemeBySlug(db: Db, slug: string) {
+  return db.query.problemes.findFirst({ where: (p, { eq: eqOp }) => eqOp(p.slug, slug) });
+}
+
+export async function getProblemeById(db: Db, id: string) {
+  return db.query.problemes.findFirst({ where: (p, { eq: eqOp }) => eqOp(p.id, id) });
+}
+
+export interface PisteWithStats {
+  id: string;
+  titre: string;
+  description: string | null;
+  difficulte: number | null;
+  threadsConfirmed: number;
+  threadsTotal: number;
+  appWorked: number;
+  appTotal: number;
+}
+
+/** Pistes d'un problème, triées par taux de succès forum (signal app prioritaire au Sprint 3, §7 architecture). */
+export async function getPistesForProbleme(db: Db, problemeId: string): Promise<PisteWithStats[]> {
+  const rows = await db.execute<{
+    id: string;
+    titre: string;
+    description: string | null;
+    difficulte: number | null;
+    threads_confirmed: string | null;
+    threads_total: string | null;
+    app_worked: string | null;
+    app_total: string | null;
+  }>(sql`
+    SELECT
+      p.id,
+      p.titre,
+      p.description,
+      p.difficulte,
+      coalesce(ps.threads_confirmed, 0) AS threads_confirmed,
+      coalesce(ps.threads_total, 0) AS threads_total,
+      coalesce(ps.app_worked, 0) AS app_worked,
+      coalesce(ps.app_total, 0) AS app_total
+    FROM pistes p
+    LEFT JOIN piste_stats ps ON ps.piste_id = p.id
+    WHERE p.probleme_id = ${problemeId}
+    ORDER BY
+      CASE WHEN coalesce(ps.threads_total, 0) = 0 THEN 0
+           ELSE coalesce(ps.threads_confirmed, 0)::float / ps.threads_total END DESC
+  `);
+
+  return rows.map((r) => ({
+    id: r.id,
+    titre: r.titre,
+    description: r.description,
+    difficulte: r.difficulte,
+    threadsConfirmed: Number(r.threads_confirmed ?? 0),
+    threadsTotal: Number(r.threads_total ?? 0),
+    appWorked: Number(r.app_worked ?? 0),
+    appTotal: Number(r.app_total ?? 0),
+  }));
+}
+
+export async function getPisteById(db: Db, pisteId: string) {
+  return db.query.pistes.findFirst({ where: (p, { eq: eqOp }) => eqOp(p.id, pisteId) });
+}
+
+export interface ThreadMention {
+  threadId: string;
+  url: string;
+  postUrl: string | null;
+  forum: string;
+  titre: string;
+  statutDansThread: 'confirmed' | 'tested_neutral' | 'tested_negative' | 'mentioned';
+  extrait: string | null;
+  confidence: number;
+  traduit: boolean;
+}
+
+export async function getThreadMentionsForPiste(db: Db, pisteId: string): Promise<ThreadMention[]> {
+  const rows = await db
+    .select({
+      threadId: threads.id,
+      url: threads.url,
+      postUrl: threadPisteMentions.postUrl,
+      forum: threads.forum,
+      titre: threads.titre,
+      statutDansThread: threadPisteMentions.statutDansThread,
+      extrait: threadPisteMentions.extrait,
+      confidence: threadPisteMentions.confidence,
+      traduit: threads.traduit,
+    })
+    .from(threadPisteMentions)
+    .innerJoin(threads, eq(threads.id, threadPisteMentions.threadId))
+    .where(eq(threadPisteMentions.pisteId, pisteId))
+    .orderBy(desc(threadPisteMentions.confidence));
+  return rows;
+}
+
+export async function getAliasesForPiste(db: Db, pisteId: string): Promise<string[]> {
+  const rows = await db
+    .select({ alias: pisteAliases.alias })
+    .from(pisteAliases)
+    .where(eq(pisteAliases.pisteId, pisteId));
+  return rows.map((r) => r.alias);
+}

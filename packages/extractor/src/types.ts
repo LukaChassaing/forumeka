@@ -10,7 +10,7 @@ export type StatutPiste = z.infer<typeof StatutPisteSchema>;
 
 export const ProblemeSchema = z.object({
   titre: z.string().min(3).max(200),
-  vehicules: z.array(z.string()).min(1),
+  vehicules: z.array(z.string()),
   symptomes: z.array(z.string()).min(1),
 });
 export type Probleme = z.infer<typeof ProblemeSchema>;
@@ -23,11 +23,16 @@ export const PisteExtraiteSchema = z.object({
 });
 export type PisteExtraite = z.infer<typeof PisteExtraiteSchema>;
 
-export const ExtractionSchema = z.object({
+export const ExtractionItemSchema = z.object({
   probleme: ProblemeSchema,
   pistes: z.array(PisteExtraiteSchema),
   cause_finale: z.string().nullable(),
   resolved_in_thread: z.boolean(),
+});
+export type ExtractionItem = z.infer<typeof ExtractionItemSchema>;
+
+export const ExtractionSchema = z.object({
+  problemes: z.array(ExtractionItemSchema),
 });
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
@@ -35,6 +40,8 @@ export const ThreadPostSchema = z.object({
   author: z.string(),
   date: z.string().nullable(),
   content: z.string(),
+  /** Ancre phpBB du post (ex: "p123456"), pour lier directement vers le bon message. */
+  post_id: z.string().nullable().optional(),
 });
 export type ThreadPost = z.infer<typeof ThreadPostSchema>;
 
@@ -45,6 +52,7 @@ export const ParsedThreadSchema = z.object({
   date_thread: z.string().nullable(),
   nb_pages: z.number().int().positive(),
   posts: z.array(ThreadPostSchema),
+  langue_origine: z.enum(['fr', 'en']).default('fr'),
 });
 export type ParsedThread = z.infer<typeof ParsedThreadSchema>;
 
