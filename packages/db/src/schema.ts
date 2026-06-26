@@ -23,6 +23,13 @@ export const statutPisteEnum = pgEnum('statut_dans_thread', [
 ]);
 export const verdictEnum = pgEnum('verdict', ['worked', 'failed', 'partial']);
 export const satisfactionEnum = pgEnum('satisfaction', ['found', 'partial', 'none']);
+export const crawlStatusEnum = pgEnum('crawl_status', [
+  'discovered',
+  'processing',
+  'ingested',
+  'failed',
+  'skipped',
+]);
 
 /** Schéma Auth.js (DrizzleAdapter) — magic link Resend, voir §11/§12 architecture. */
 export const users = pgTable('users', {
@@ -201,4 +208,17 @@ export const searchLog = pgTable('search_log', {
   clickedThreadId: uuid('clicked_thread_id').references(() => threads.id),
   satisfaction: satisfactionEnum('satisfaction'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** File d'indexation persistante : permet de lancer/relancer le crawl sans perdre la progression (§ roadmap indexation). */
+export const crawlQueue = pgTable('crawl_queue', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  threadUrl: text('thread_url').notNull().unique(),
+  forum: text('forum').notNull(),
+  subForumLabel: text('sub_forum_label'),
+  status: crawlStatusEnum('status').notNull().default('discovered'),
+  attempts: integer('attempts').notNull().default(0),
+  error: text('error'),
+  discoveredAt: timestamp('discovered_at', { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp('processed_at', { withTimezone: true }),
 });
