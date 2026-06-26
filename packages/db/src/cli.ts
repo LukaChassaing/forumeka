@@ -5,7 +5,7 @@ import { ExtractionRunSchema } from '@forumeka/extractor/types';
 import { createDb } from './client.js';
 import { ingestExtractionRun } from './ingest.js';
 import { createBoss, enqueueExtractionRun, startWorker } from './worker.js';
-import { discoverAll, processNext, getQueueStats } from './crawl.js';
+import { discoverAll, processNext, getQueueStats, startBatch, finishBatch } from './crawl.js';
 import { REFRESH_PISTE_STATS_SQL } from './views.js';
 
 const program = new Command();
@@ -79,7 +79,16 @@ program
   .action(async () => {
     const db = createDb();
     try {
-      const { found, added } = await discoverAll(db);
+      let lastLabel = '';
+      const { found, added } = await discoverAll(db, {
+        onProgress: ({ forum, label, page, totalFound }) => {
+          if (label !== lastLabel) {
+            lastLabel = label;
+            console.log(`→ ${forum} — ${label}`);
+          }
+          console.log(`  page ${page} — ${totalFound} thread(s) trouvé(s) jusqu'ici`);
+        },
+      });
       console.log(`✓ ${found} thread(s) trouvé(s), ${added} nouveau(x) ajouté(s) à la file`);
     } finally {
       await db.$client.end();
@@ -94,9 +103,10 @@ program
     const db = createDb();
     const max = Number(opts.max);
     let processed = 0;
+    const batch = await startBatch(db, max);
     try {
       while (max === 0 || processed < max) {
-        const result = await processNext(db);
+        const result = await processNext(db, batch.id);
         if (!result) {
           console.log('✓ file épuisée');
           break;
@@ -113,6 +123,7 @@ program
         }
       }
     } finally {
+      await finishBatch(db, batch.id);
       await db.execute(REFRESH_PISTE_STATS_SQL);
       await db.$client.end();
     }

@@ -2,7 +2,8 @@ import * as cheerio from 'cheerio';
 import { fetchAllowed } from './fetch.js';
 
 const PHPBB_HOSTS = ['forum4x4.org'];
-const TOPICS_PER_PHPBB_LISTING_PAGE = 50;
+/** Vérifié sur forum4x4.org : 20 sujets par page de listing (ex. dernière page d'un forum à 11626 sujets = start=11620, soit 11620/20=581). */
+const TOPICS_PER_PHPBB_LISTING_PAGE = 20;
 
 /** Construit l'URL de la page N d'un listing de sous-forum (style ?page=N, ou ?start=N pour phpBB). */
 function buildListingPageUrl(url: string, page: number): string {
@@ -70,6 +71,8 @@ function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
 export interface DiscoverOptions {
   /** Nombre max de pages de listing à parcourir (borne le crawl, §12 architecture). */
   maxPages?: number;
+  /** Appelé après chaque page de listing parcourue, pour suivre la progression sur les gros sous-forums. */
+  onPage?: (info: { page: number; totalFound: number }) => void;
 }
 
 /**
@@ -97,7 +100,13 @@ export async function discoverThreads(
     const html = await fetchAllowed(pageUrl);
     const links = extractor(html, pageUrl);
     if (links.length === 0) break;
+    const sizeBefore = found.size;
     for (const link of links) found.add(link);
+    opts.onPage?.({ page, totalFound: found.size });
+    // Au-delà de la vraie fin du listing, certains forums (phpBB) renvoient la dernière page
+    // valide en boucle plutôt qu'une page vide — si une page ne contient plus aucun thread
+    // inédit, on a atteint la fin réelle malgré un contenu non vide.
+    if (found.size === sizeBefore) break;
   }
   return [...found];
 }

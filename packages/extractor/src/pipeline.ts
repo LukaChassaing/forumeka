@@ -39,12 +39,14 @@ export async function fetchAndParseThread(url: string): Promise<ParsedThread> {
 
 export async function runPipeline(url: string): Promise<ExtractionRun> {
   const thread = await fetchAndParseThread(url);
-  const { model, extraction } = await extractFromThread(thread);
+  const { model, extraction, inputTokens, outputTokens } = await extractFromThread(thread);
   return {
     schema_version: 1,
     source_model: model,
     extracted_at: new Date().toISOString(),
     thread,
     extraction,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
   };
 }

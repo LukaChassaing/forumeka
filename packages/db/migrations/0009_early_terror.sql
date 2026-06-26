@@ -1,0 +1,1 @@
+ALTER TABLE "crawl_queue" ADD COLUMN "created_detail" jsonb;

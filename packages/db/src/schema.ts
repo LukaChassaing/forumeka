@@ -210,6 +210,19 @@ export const searchLog = pgTable('search_log', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Un lot = un appel `forumeka-db crawl --max N` ; regroupe les threads qu'il a traités (§ dashboard admin). */
+export const crawlBatches = pgTable('crawl_batches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  requestedMax: integer('requested_max').notNull(),
+  threadsProcessed: integer('threads_processed').notNull().default(0),
+  problemesCreated: integer('problemes_created').notNull().default(0),
+  pistesCreated: integer('pistes_created').notNull().default(0),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+});
+
 /** File d'indexation persistante : permet de lancer/relancer le crawl sans perdre la progression (§ roadmap indexation). */
 export const crawlQueue = pgTable('crawl_queue', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -221,4 +234,25 @@ export const crawlQueue = pgTable('crawl_queue', {
   error: text('error'),
   discoveredAt: timestamp('discovered_at', { withTimezone: true }).notNull().defaultNow(),
   processedAt: timestamp('processed_at', { withTimezone: true }),
+  problemesCreated: integer('problemes_created'),
+  pistesCreatedNewProbleme: integer('pistes_created_new_probleme'),
+  pistesCreatedExistingProbleme: integer('pistes_created_existing_probleme'),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  batchId: uuid('batch_id').references(() => crawlBatches.id),
+  /** Titres des problèmes/pistes nouvellement créés par ce thread : { problemes: [{id,titre}], pistes: [{id,titre}] }. */
+  createdDetail: jsonb('created_detail').$type<{
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  }>(),
+});
+
+/** Instantané d'un passage de discover-all sur un sous-forum : combien de pages/threads à cette date. */
+export const discoverRuns = pgTable('discover_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  forum: text('forum').notNull(),
+  subForumLabel: text('sub_forum_label').notNull(),
+  ranAt: timestamp('ran_at', { withTimezone: true }).notNull().defaultNow(),
+  pagesScanned: integer('pages_scanned').notNull(),
+  threadsFound: integer('threads_found').notNull(),
 });
