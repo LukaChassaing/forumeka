@@ -1,0 +1,33 @@
+Copyright (c) 2026 Luka Chassaing. All rights reserved.
+
+This repository is source-available for transparency and community contribution.
+It is NOT open source: no license to use, copy, modify, merge, publish,
+distribute, sublicense, host, deploy, or sell copies of this software, or
+substantial portions of it, is granted, except as explicitly stated below.
+
+Permitted:
+- Viewing and reading the source code.
+- Forking this repository and submitting Pull Requests back to this repository
+  (e.g. bug fixes, improvements) for review and possible merge by the copyright
+  holder.
+- Running the software locally for the sole purpose of preparing such a
+  contribution.
+
+Not permitted without prior written permission from the copyright holder:
+- Deploying, hosting, or operating this software (or a derivative of it) as a
+  public or private service.
+- Redistributing this software or any derivative of it, in source or compiled
+  form, outside of a Pull Request submitted to this repository.
+- Using this software, in whole or in part, for any commercial purpose.
+
+Contributions:
+By submitting a Pull Request or other contribution to this repository, you
+grant the copyright holder a perpetual, worldwide, royalty-free license to
+use, modify, relicense, and distribute your contribution as part of this
+project, under any terms the copyright holder chooses.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+USE OF THE SOFTWARE.
