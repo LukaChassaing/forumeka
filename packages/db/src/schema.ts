@@ -225,3 +225,13 @@ export const crawlQueue = pgTable('crawl_queue', {
   pistesCreatedNewProbleme: integer('pistes_created_new_probleme'),
   pistesCreatedExistingProbleme: integer('pistes_created_existing_probleme'),
 });
+
+/** Instantané d'un passage de discover-all sur un sous-forum : combien de pages/threads à cette date. */
+export const discoverRuns = pgTable('discover_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  forum: text('forum').notNull(),
+  subForumLabel: text('sub_forum_label').notNull(),
+  ranAt: timestamp('ran_at', { withTimezone: true }).notNull().defaultNow(),
+  pagesScanned: integer('pages_scanned').notNull(),
+  threadsFound: integer('threads_found').notNull(),
+});

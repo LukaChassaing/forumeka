@@ -5,13 +5,15 @@ import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { isAdminEmail } from '@/lib/admin';
 
-/** Borne haute figée pour l'intervalle de couverture affiché (§ demande admin dashboard). */
-const DATE_MAX_AFFICHEE = '26/06/2026';
-
 function formatDateFr(iso: string | null): string {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
+}
+
+function formatDateTimeFr(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default async function AdminPage() {
@@ -54,9 +56,15 @@ export default async function AdminPage() {
                       <span>{s.subForumLabel}</span>
                       <span className="text-sm text-ink-500">
                         {pct}% — {s.ingested}/{s.discovered} threads — du{' '}
-                        {formatDateFr(s.oldestThreadDate)} au {DATE_MAX_AFFICHEE}
+                        {formatDateFr(s.oldestThreadDate)} au {formatDateFr(new Date().toISOString().slice(0, 10))}
                       </span>
                     </Link>
+                    {s.lastDiscoverRun && (
+                      <p className="mt-1 text-xs text-ink-400">
+                        Dernier scan : {s.lastDiscoverRun.threadsFound} threads sur{' '}
+                        {s.lastDiscoverRun.pagesScanned} pages, le {formatDateTimeFr(s.lastDiscoverRun.ranAt)}
+                      </p>
+                    )}
                   </li>
                 );
               })}

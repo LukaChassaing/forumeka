@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { discoverThreads, runPipeline, SOURCES } from '@forumeka/extractor';
 import type { Db } from './client.js';
-import { crawlQueue } from './schema.js';
+import { crawlQueue, discoverRuns } from './schema.js';
 import { ingestExtractionRun } from './ingest.js';
 
 /** Pas de vraie limite : discoverThreads s'arrête naturellement dès qu'une page de listing ne renvoie plus de nouveau thread. */
@@ -16,10 +16,13 @@ export async function discoverAll(
   let added = 0;
   for (const source of SOURCES) {
     for (const subforum of source.subforums) {
+      let lastPage = 0;
       const urls = await discoverThreads(subforum.url, {
         maxPages: NO_PAGE_CAP,
-        onPage: (info) =>
-          opts.onProgress?.({ forum: source.forum, label: subforum.label, ...info }),
+        onPage: (info) => {
+          lastPage = info.page;
+          opts.onProgress?.({ forum: source.forum, label: subforum.label, ...info });
+        },
       });
       found += urls.length;
       for (const url of urls) {
@@ -30,6 +33,12 @@ export async function discoverAll(
           .returning({ id: crawlQueue.id });
         if (result.length > 0) added++;
       }
+      await db.insert(discoverRuns).values({
+        forum: source.forum,
+        subForumLabel: subforum.label,
+        pagesScanned: lastPage,
+        threadsFound: urls.length,
+      });
     }
   }
   return { found, added };
@@ -108,6 +117,7 @@ export interface SubForumProgress {
   discovered: number;
   ingested: number;
   oldestThreadDate: string | null;
+  lastDiscoverRun: { ranAt: string; pagesScanned: number; threadsFound: number } | null;
 }
 
 /** Progression par sous-forum, pour le dashboard admin (§ roadmap indexation). */
@@ -118,16 +128,29 @@ export async function getSubForumProgress(db: Db): Promise<SubForumProgress[]> {
     discovered: string;
     ingested: string;
     oldest_thread_date: string | null;
+    last_ran_at: string | null;
+    last_pages_scanned: number | null;
+    last_threads_found: number | null;
   }>(sql`
     SELECT
       cq.forum,
       cq.sub_forum_label,
       count(*) AS discovered,
       count(*) FILTER (WHERE cq.status = 'ingested') AS ingested,
-      min(t.date_thread)::text AS oldest_thread_date
+      min(t.date_thread)::text AS oldest_thread_date,
+      last_run.ran_at::text AS last_ran_at,
+      last_run.pages_scanned AS last_pages_scanned,
+      last_run.threads_found AS last_threads_found
     FROM crawl_queue cq
     LEFT JOIN threads t ON t.url = cq.thread_url
-    GROUP BY cq.forum, cq.sub_forum_label
+    LEFT JOIN LATERAL (
+      SELECT ran_at, pages_scanned, threads_found
+      FROM discover_runs dr
+      WHERE dr.forum = cq.forum AND dr.sub_forum_label = cq.sub_forum_label
+      ORDER BY dr.ran_at DESC
+      LIMIT 1
+    ) last_run ON true
+    GROUP BY cq.forum, cq.sub_forum_label, last_run.ran_at, last_run.pages_scanned, last_run.threads_found
     ORDER BY cq.forum, cq.sub_forum_label
   `);
   return rows.map((r) => ({
@@ -136,6 +159,13 @@ export async function getSubForumProgress(db: Db): Promise<SubForumProgress[]> {
     discovered: Number(r.discovered),
     ingested: Number(r.ingested),
     oldestThreadDate: r.oldest_thread_date,
+    lastDiscoverRun: r.last_ran_at
+      ? {
+          ranAt: r.last_ran_at,
+          pagesScanned: Number(r.last_pages_scanned),
+          threadsFound: Number(r.last_threads_found),
+        }
+      : null,
   }));
 }
 
