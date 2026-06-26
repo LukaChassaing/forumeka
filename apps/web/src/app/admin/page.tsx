@@ -30,7 +30,12 @@ export default async function AdminPage() {
   return (
     <div>
       <p className="text-sm font-medium uppercase tracking-wide text-ink-500">Admin</p>
-      <h1 className="mt-1 text-2xl font-bold text-ink-900">Indexation</h1>
+      <div className="mt-1 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-ink-900">Indexation</h1>
+        <Link href="/admin/traitements" className="text-sm text-blue-700 hover:underline">
+          Voir les traitements →
+        </Link>
+      </div>
 
       <div className="mt-6 space-y-6">
         {[...byForum.entries()].map(([forum, subforums]) => (

@@ -57,6 +57,13 @@
       "when": 1782490147775,
       "tag": "0007_chubby_talkback",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782504255954,
+      "tag": "0008_freezing_red_shift",
+      "breakpoints": true
     }
   ]
 }

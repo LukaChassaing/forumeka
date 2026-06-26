@@ -62,5 +62,7 @@ export const ExtractionRunSchema = z.object({
   extracted_at: z.string().datetime(),
   thread: ParsedThreadSchema,
   extraction: ExtractionSchema,
+  input_tokens: z.number().optional(),
+  output_tokens: z.number().optional(),
 });
 export type ExtractionRun = z.infer<typeof ExtractionRunSchema>;

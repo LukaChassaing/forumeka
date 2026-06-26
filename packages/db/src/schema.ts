@@ -210,6 +210,19 @@ export const searchLog = pgTable('search_log', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Un lot = un appel `forumeka-db crawl --max N` ; regroupe les threads qu'il a traités (§ dashboard admin). */
+export const crawlBatches = pgTable('crawl_batches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  requestedMax: integer('requested_max').notNull(),
+  threadsProcessed: integer('threads_processed').notNull().default(0),
+  problemesCreated: integer('problemes_created').notNull().default(0),
+  pistesCreated: integer('pistes_created').notNull().default(0),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+});
+
 /** File d'indexation persistante : permet de lancer/relancer le crawl sans perdre la progression (§ roadmap indexation). */
 export const crawlQueue = pgTable('crawl_queue', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -224,6 +237,9 @@ export const crawlQueue = pgTable('crawl_queue', {
   problemesCreated: integer('problemes_created'),
   pistesCreatedNewProbleme: integer('pistes_created_new_probleme'),
   pistesCreatedExistingProbleme: integer('pistes_created_existing_probleme'),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  batchId: uuid('batch_id').references(() => crawlBatches.id),
 });
 
 /** Instantané d'un passage de discover-all sur un sous-forum : combien de pages/threads à cette date. */
