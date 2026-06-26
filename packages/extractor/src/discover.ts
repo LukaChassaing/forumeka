@@ -70,6 +70,8 @@ function extractPhpbbThreadLinks(html: string, baseUrl: string): string[] {
 export interface DiscoverOptions {
   /** Nombre max de pages de listing à parcourir (borne le crawl, §12 architecture). */
   maxPages?: number;
+  /** Appelé après chaque page de listing parcourue, pour suivre la progression sur les gros sous-forums. */
+  onPage?: (info: { page: number; totalFound: number }) => void;
 }
 
 /**
@@ -98,6 +100,7 @@ export async function discoverThreads(
     const links = extractor(html, pageUrl);
     if (links.length === 0) break;
     for (const link of links) found.add(link);
+    opts.onPage?.({ page, totalFound: found.size });
   }
   return [...found];
 }

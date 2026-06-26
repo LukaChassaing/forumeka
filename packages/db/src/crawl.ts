@@ -4,13 +4,23 @@ import type { Db } from './client.js';
 import { crawlQueue } from './schema.js';
 import { ingestExtractionRun } from './ingest.js';
 
+/** Pas de vraie limite : discoverThreads s'arrête naturellement dès qu'une page de listing ne renvoie plus de nouveau thread. */
+const NO_PAGE_CAP = 100_000;
+
 /** Parcourt SOURCES, découvre les threads de chaque sous-forum et les ajoute à la file (idempotent). */
-export async function discoverAll(db: Db): Promise<{ found: number; added: number }> {
+export async function discoverAll(
+  db: Db,
+  opts: { onProgress?: (info: { forum: string; label: string; page: number; totalFound: number }) => void } = {},
+): Promise<{ found: number; added: number }> {
   let found = 0;
   let added = 0;
   for (const source of SOURCES) {
     for (const subforum of source.subforums) {
-      const urls = await discoverThreads(subforum.url);
+      const urls = await discoverThreads(subforum.url, {
+        maxPages: NO_PAGE_CAP,
+        onPage: (info) =>
+          opts.onProgress?.({ forum: source.forum, label: subforum.label, ...info }),
+      });
       found += urls.length;
       for (const url of urls) {
         const result = await db
@@ -29,6 +39,9 @@ export interface ProcessResult {
   threadUrl: string;
   status: 'ingested' | 'failed';
   error?: string;
+  problemesCreated?: number;
+  pistesCreatedNewProbleme?: number;
+  pistesCreatedExistingProbleme?: number;
 }
 
 /** Traite le prochain thread en attente (discovered, ou failed avec <3 tentatives). Null si la file est vide. */
@@ -48,12 +61,25 @@ export async function processNext(db: Db): Promise<ProcessResult | null> {
 
   try {
     const run = await runPipeline(row.thread_url);
-    await ingestExtractionRun(db, run);
+    const result = await ingestExtractionRun(db, run);
     await db
       .update(crawlQueue)
-      .set({ status: 'ingested', processedAt: new Date(), error: null })
+      .set({
+        status: 'ingested',
+        processedAt: new Date(),
+        error: null,
+        problemesCreated: result.created.problemes,
+        pistesCreatedNewProbleme: result.created.pistesNewProbleme,
+        pistesCreatedExistingProbleme: result.created.pistesExistingProbleme,
+      })
       .where(eq(crawlQueue.id, row.id));
-    return { threadUrl: row.thread_url, status: 'ingested' };
+    return {
+      threadUrl: row.thread_url,
+      status: 'ingested',
+      problemesCreated: result.created.problemes,
+      pistesCreatedNewProbleme: result.created.pistesNewProbleme,
+      pistesCreatedExistingProbleme: result.created.pistesExistingProbleme,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await db
@@ -74,4 +100,75 @@ export async function getQueueStats(db: Db): Promise<QueueStats[]> {
     SELECT status, count(*) AS count FROM crawl_queue GROUP BY status ORDER BY status
   `);
   return rows.map((r) => ({ status: r.status, count: Number(r.count) }));
+}
+
+export interface SubForumProgress {
+  forum: string;
+  subForumLabel: string;
+  discovered: number;
+  ingested: number;
+  oldestThreadDate: string | null;
+}
+
+/** Progression par sous-forum, pour le dashboard admin (§ roadmap indexation). */
+export async function getSubForumProgress(db: Db): Promise<SubForumProgress[]> {
+  const rows = await db.execute<{
+    forum: string;
+    sub_forum_label: string;
+    discovered: string;
+    ingested: string;
+    oldest_thread_date: string | null;
+  }>(sql`
+    SELECT
+      cq.forum,
+      cq.sub_forum_label,
+      count(*) AS discovered,
+      count(*) FILTER (WHERE cq.status = 'ingested') AS ingested,
+      min(t.date_thread)::text AS oldest_thread_date
+    FROM crawl_queue cq
+    LEFT JOIN threads t ON t.url = cq.thread_url
+    GROUP BY cq.forum, cq.sub_forum_label
+    ORDER BY cq.forum, cq.sub_forum_label
+  `);
+  return rows.map((r) => ({
+    forum: r.forum,
+    subForumLabel: r.sub_forum_label,
+    discovered: Number(r.discovered),
+    ingested: Number(r.ingested),
+    oldestThreadDate: r.oldest_thread_date,
+  }));
+}
+
+export interface CrawledThread {
+  threadUrl: string;
+  status: string;
+  discoveredAt: string;
+  processedAt: string | null;
+  error: string | null;
+  problemesCreated: number | null;
+  pistesCreatedNewProbleme: number | null;
+  pistesCreatedExistingProbleme: number | null;
+}
+
+/** Détail des threads scannés pour un sous-forum donné, pour le dashboard admin. */
+export async function getThreadsForSubForum(
+  db: Db,
+  forum: string,
+  subForumLabel: string,
+): Promise<CrawledThread[]> {
+  const rows = await db
+    .select({
+      threadUrl: crawlQueue.threadUrl,
+      status: crawlQueue.status,
+      discoveredAt: crawlQueue.discoveredAt,
+      processedAt: crawlQueue.processedAt,
+      error: crawlQueue.error,
+      problemesCreated: crawlQueue.problemesCreated,
+      pistesCreatedNewProbleme: crawlQueue.pistesCreatedNewProbleme,
+      pistesCreatedExistingProbleme: crawlQueue.pistesCreatedExistingProbleme,
+    })
+    .from(crawlQueue)
+    .where(sql`${crawlQueue.forum} = ${forum} AND ${crawlQueue.subForumLabel} = ${subForumLabel}`)
+    .orderBy(sql`${crawlQueue.discoveredAt} desc`);
+  return rows.map((r) => ({ ...r, discoveredAt: r.discoveredAt.toISOString(), processedAt: r.processedAt?.toISOString() ?? null }));
 }

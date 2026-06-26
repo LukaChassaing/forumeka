@@ -79,7 +79,16 @@ program
   .action(async () => {
     const db = createDb();
     try {
-      const { found, added } = await discoverAll(db);
+      let lastLabel = '';
+      const { found, added } = await discoverAll(db, {
+        onProgress: ({ forum, label, page, totalFound }) => {
+          if (label !== lastLabel) {
+            lastLabel = label;
+            console.log(`→ ${forum} — ${label}`);
+          }
+          console.log(`  page ${page} — ${totalFound} thread(s) trouvé(s) jusqu'ici`);
+        },
+      });
       console.log(`✓ ${found} thread(s) trouvé(s), ${added} nouveau(x) ajouté(s) à la file`);
     } finally {
       await db.$client.end();

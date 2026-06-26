@@ -221,4 +221,7 @@ export const crawlQueue = pgTable('crawl_queue', {
   error: text('error'),
   discoveredAt: timestamp('discovered_at', { withTimezone: true }).notNull().defaultNow(),
   processedAt: timestamp('processed_at', { withTimezone: true }),
+  problemesCreated: integer('problemes_created'),
+  pistesCreatedNewProbleme: integer('pistes_created_new_probleme'),
+  pistesCreatedExistingProbleme: integer('pistes_created_existing_probleme'),
 });
