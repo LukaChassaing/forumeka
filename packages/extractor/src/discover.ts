@@ -2,7 +2,8 @@ import * as cheerio from 'cheerio';
 import { fetchAllowed } from './fetch.js';
 
 const PHPBB_HOSTS = ['forum4x4.org'];
-const TOPICS_PER_PHPBB_LISTING_PAGE = 50;
+/** Vérifié sur forum4x4.org : 20 sujets par page de listing (ex. dernière page d'un forum à 11626 sujets = start=11620, soit 11620/20=581). */
+const TOPICS_PER_PHPBB_LISTING_PAGE = 20;
 
 /** Construit l'URL de la page N d'un listing de sous-forum (style ?page=N, ou ?start=N pour phpBB). */
 function buildListingPageUrl(url: string, page: number): string {
