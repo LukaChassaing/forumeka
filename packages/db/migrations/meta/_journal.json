@@ -64,6 +64,13 @@
       "when": 1782504255954,
       "tag": "0008_freezing_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782505067382,
+      "tag": "0009_early_terror",
+      "breakpoints": true
     }
   ]
 }

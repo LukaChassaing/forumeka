@@ -240,6 +240,11 @@ export const crawlQueue = pgTable('crawl_queue', {
   inputTokens: integer('input_tokens'),
   outputTokens: integer('output_tokens'),
   batchId: uuid('batch_id').references(() => crawlBatches.id),
+  /** Titres des problèmes/pistes nouvellement créés par ce thread : { problemes: [{id,titre}], pistes: [{id,titre}] }. */
+  createdDetail: jsonb('created_detail').$type<{
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  }>(),
 });
 
 /** Instantané d'un passage de discover-all sur un sous-forum : combien de pages/threads à cette date. */

@@ -60,6 +60,11 @@ export interface IngestResult {
     /** Pistes créées pour un problème qui existait déjà avant ce run. */
     pistesExistingProbleme: number;
   };
+  /** Titres des problèmes/pistes nouvellement créés, pour affichage détaillé (§ dashboard admin). */
+  createdDetail: {
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  };
 }
 
 async function findClosest(
@@ -110,6 +115,8 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
 
   const problemeIds: string[] = [];
   const pisteIds: string[] = [];
+  const createdProblemesDetail: { id: string; titre: string }[] = [];
+  const createdPistesDetail: { id: string; titre: string }[] = [];
 
   for (const item of run.extraction.problemes) {
     const closestProbleme = await findClosest(db, problemes, item.probleme.titre);
@@ -130,7 +137,10 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           .returning({ id: problemes.id })
       )[0]!.id;
     const isNewProbleme = !closestProbleme;
-    if (isNewProbleme) createdProblemes++;
+    if (isNewProbleme) {
+      createdProblemes++;
+      createdProblemesDetail.push({ id: problemeId, titre: item.probleme.titre });
+    }
     problemeIds.push(problemeId);
 
     let causeFinalePisteId: string | undefined;
@@ -158,6 +168,7 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
         createdPistes++;
         if (isNewProbleme) createdPistesNewProbleme++;
         else createdPistesExistingProbleme++;
+        createdPistesDetail.push({ id: pisteId, titre: piste.titre });
       } else {
         await db.insert(pisteAliases).values({ pisteId, alias: piste.titre }).onConflictDoNothing();
       }
@@ -197,6 +208,10 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
       pistes: createdPistes,
       pistesNewProbleme: createdPistesNewProbleme,
       pistesExistingProbleme: createdPistesExistingProbleme,
+    },
+    createdDetail: {
+      problemes: createdProblemesDetail,
+      pistes: createdPistesDetail,
     },
   };
 }

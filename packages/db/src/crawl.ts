@@ -108,6 +108,7 @@ export async function processNext(db: Db, batchId?: string): Promise<ProcessResu
         pistesCreatedExistingProbleme: result.created.pistesExistingProbleme,
         inputTokens: run.input_tokens ?? null,
         outputTokens: run.output_tokens ?? null,
+        createdDetail: result.createdDetail,
       })
       .where(eq(crawlQueue.id, row.id));
     return {
@@ -210,6 +211,7 @@ export interface CrawledThread {
   pistesCreatedExistingProbleme: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
+  createdDetail?: { problemes: { id: string; titre: string }[]; pistes: { id: string; titre: string }[] } | null;
 }
 
 /** Détail des threads scannés pour un sous-forum donné, pour le dashboard admin. */
@@ -321,6 +323,7 @@ export async function getThreadsForBatch(db: Db, batchId: string): Promise<Crawl
       pistesCreatedExistingProbleme: crawlQueue.pistesCreatedExistingProbleme,
       inputTokens: crawlQueue.inputTokens,
       outputTokens: crawlQueue.outputTokens,
+      createdDetail: crawlQueue.createdDetail,
     })
     .from(crawlQueue)
     .where(eq(crawlQueue.batchId, batchId))
