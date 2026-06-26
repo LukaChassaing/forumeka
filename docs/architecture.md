@@ -4,12 +4,7 @@
 
 ## 1. Concept produit
 
-L'utilisateur tape un symptôme en langage naturel (ex: _"Clio 3 1.5 dCi cale à chaud"_). Forumeka retourne une fiche **problème** avec ses **pistes** de diagnostic, classées par taux de succès, sourcées à la fois par :
-
-- les **threads forum** (extraction LLM)
-- les **retours users** post-réparation (notations dans l'app)
-
-Le pari : les forums auto sont la plus grande base de connaissance diagnostique au monde, mais inutilisable. Les LLMs permettent enfin d'en extraire du savoir structuré, et la couche communautaire de l'app le valide/affine en continu.
+Voir le [README](../README.md) pour le pitch produit (quoi, pour qui, modèle économique). Le pari technique qui sous-tend toute l'architecture ci-dessous : les forums auto sont la plus grande base de connaissance diagnostique au monde, mais inutilisable telle quelle. Les LLMs permettent enfin d'en extraire du savoir structuré.
 
 ## 2. Principe central : inversion d'entité
 
@@ -30,11 +25,11 @@ Symptômes agrégés, dédupliqués par similarité sémantique.
 | Colonne         | Type          | Notes                                     |
 | --------------- | ------------- | ----------------------------------------- |
 | `id`            | UUID PK       |                                           |
+| `slug`          | TEXT UNIQUE   | pour l'URL `/diag/[slug]`                 |
 | `titre`         | TEXT          | ex: "1.5 dCi K9K cale à chaud"            |
 | `description`   | TEXT          |                                           |
 | `vehicules`     | JSONB         | ex: `['Clio 3 K9K', 'Megane 2 K9K']`      |
 | `symptomes`     | TEXT[]        | ex: `['calage à chaud', 'voyant moteur']` |
-| `embedding`     | VECTOR(1536)  | pour recherche sémantique                 |
 | `search_vector` | TSVECTOR      | full-text search                          |
 | `metadata`      | JSONB         | champs dynamiques                         |
 | `source_type`   | TEXT          | `human` / `llm` / `user_contribution`     |
@@ -51,10 +46,9 @@ Causes possibles, rattachées à un problème, dédupliquées par similarité.
 | `id`                                                        | UUID PK      |                                |
 | `probleme_id`                                               | UUID FK      |                                |
 | `titre`                                                     | TEXT         | ex: "Capteur PMH"              |
-| `description`                                               | TEXT         | procédure de test/remplacement |
+| `description`                                               | TEXT         | procédure de test/remplacement — colonne en place, **non alimentée** (voir [monetization.md](monetization.md)) |
 | `cout_estime_eur`                                           | NUMRANGE     | ex: `[80, 150]`                |
 | `difficulte`                                                | INTEGER      | 1-5                            |
-| `embedding`                                                 | VECTOR(1536) |                                |
 | `metadata`                                                  | JSONB        |                                |
 | `source_type`, `source_model`, `reviewed_by`, `reviewed_at` |              | provenance                     |
 
@@ -150,7 +144,6 @@ Signal de demande pour piloter l'indexation prioritaire.
 | `id`                | UUID PK      |                              |
 | `user_id`           | UUID FK NULL |                              |
 | `query`             | TEXT         |                              |
-| `query_embedding`   | VECTOR(1536) |                              |
 | `results_count`     | INTEGER      |                              |
 | `clicked_thread_id` | UUID FK NULL |                              |
 | `satisfaction`      | ENUM NULL    | `found` / `partial` / `none` |
@@ -192,59 +185,23 @@ Les deux apparaissent côte à côte dans l'UI, jamais additionnés.
 X sur N <verbe>
 ```
 
-Exemples :
+Exemple actuel (signal forum uniquement, signal app pas encore implémenté — voir §7) :
 
 - `14 threads sur 17 confirment`
-- `7 avis app sur 8 confirment`
-- `1 avis app sur 1 confirme`
-- `0 avis app — donner mon retour` (CTA actif)
 
 ### Règles précises
 
 - **Forum** : raw count toujours
-- **App** : raw count tant que N < seuil (5 ou 10 à calibrer)
-- **Cas zéro** : pas de masquage, on affiche `0 avis app — donner mon retour` (invitation passive à contribuer)
 - **Lignes cliquables** avec chevron `›` à droite, **pas de texte CTA redondant** type "voir la liste"
-- **Pas d'alerte "piège classique"** ni autre badge : le **tri par taux de succès** dit déjà ce qu'il faut
+- **Pas d'alerte "piège classique"** ni autre badge : le tri/badge de fiabilité dit déjà ce qu'il faut
 
-### Maquette de référence
+Le signal app (`piste_ratings`, notations post-réparation) est dépriorisé (voir [roadmap.md](roadmap.md)) : la table existe en base mais n'est pas encore branchée à l'UI. Quand ce sera fait, il devra rester **affiché séparément du signal forum, jamais fusionné** (§5) — pas de pattern figé pour l'instant tant que la fonctionnalité n'est pas planifiée.
 
-```
-Clio 3 / Megane 2 / Modus — 1.5 dCi K9K — cale à chaud
+## 7. Tri et gating des pistes (V1)
 
-Pistes connues, classées par taux de succès:
+Le tri par taux de succès réel (forum) n'est visible **qu'une fois la piste débloquée** (abonnement ou unlock gratuit). En version gratuite/anonyme, les pistes s'affichent dans un **ordre aléatoire**, sans badge de fiabilité — c'est un choix produit délibéré, pas un manque : voir [monetization.md](monetization.md) pour le détail du gating et sa justification (le rang lui-même révèle quelle piste est la bonne, donc on ne peut pas le donner gratuitement).
 
-1. Capteur PMH
-   📚 14 threads sur 17 confirment                 ›
-   🟢 7 avis app sur 8 confirment                  ›
-
-2. Pompe gavage en cuve
-   📚 6 threads sur 9 confirment                   ›
-   🟢 1 avis app sur 1 confirme                    ›
-
-3. Connecteur calculateur
-   📚 3 threads sur 8 confirment                   ›
-   ⚪ donner mon retour                            ›
-
-4. Injecteurs
-   📚 2 threads sur 22 confirment                  ›
-   🔴 1 avis app sur 14 confirme                   ›
-```
-
-## 7. Tri des pistes
-
-Ordonnancement par taux de succès. Signal app prioritaire, fallback forum quand l'app n'a pas encore assez de données.
-
-Formule de départ (à calibrer pendant le MVP) :
-
-```
-si n_app >= seuil_app:
-    score = 0.7 * taux_app + 0.3 * taux_forum
-sinon:
-    score = taux_forum
-```
-
-À affiner avec des poids dépendants de la confidence forum et du volume.
+Le signal app, une fois implémenté, viendra s'ajouter au tri de la vue débloquée — pondération à définir à ce moment-là (pas de formule figée pour l'instant, l'ancienne formule blend 0.7/0.3 était prématurée tant que `piste_ratings` n'a aucune donnée).
 
 ## 8. Traçabilité de provenance
 
@@ -339,8 +296,8 @@ Caradisiac (forum cible Sprint 0) renvoie systématiquement un challenge Cloudfl
 - **Scraping forums** : ~~fetch à la demande user uniquement~~ **mise à jour post-MVP** : découverte automatisée de threads autorisée pour le seed, mais bornée (liste de sous-forums ciblés, pas de crawl illimité) et rate-limitée. Respect robots.txt, User-Agent identifiable. Pas de redistribution du contenu brut, seulement synthèse + lien source.
 - **Forum cible Sprint 0** : Caradisiac (forum.caradisiac.com). **Bloqué par Cloudflare** (challenge JS systématique, 403 quel que soit le User-Agent/IP — `fetch`/`undici` ne peut pas résoudre un challenge JS) : voir §11ter pour le plan de contournement. **Extension validée (PR #8)** : phpBB3 générique (parser dédié, ex. forum4x4.org, sans protection anti-bot) — réutilisable pour tout forum basé sur ce moteur sans nouveau parser, utilisé en attendant que le contournement Cloudflare soit en place. Forums anglophones (ex: TDIClub) autorisés pour enrichir le seed, avec traduction EN→FR automatique du contenu extrait et badge "traduit" visible sur les sources concernées.
 - **Confidentialité** : **public-only**. Pas de mode "indexation privée". L'effet réseau de la base mutualisée est central.
-- **Auth** : **obligatoire dès la première recherche**, magic link via email.
-- **Gating** : ultra-limité sur free tier pour protéger les coûts LLM. Free tier détaillé à calibrer.
+- **Auth** : **mise à jour V1 monétisation** — recherche et consultation libres, sans compte (bon pour le SEO et l'acquisition). Compte requis seulement pour les unlocks gratuits et l'abonnement. Magic link via email. Détail complet : [monetization.md](monetization.md).
+- **Gating** : précisé en V1, voir [monetization.md](monetization.md) — ne pas rediscuter le découpage titre/fiabilité/preuve sans relire ce doc d'abord.
 - **Modération** : manuelle au début, suffit jusqu'à plusieurs centaines d'users actifs.
 - **Hébergement** : Vercel + Neon, validé.
 - **Pas de moto/utilitaire** au démarrage.
@@ -349,14 +306,7 @@ Caradisiac (forum cible Sprint 0) renvoie systématiquement un challenge Cloudfl
 
 ## 13. Plan d'exécution
 
-Voir [roadmap.md](roadmap.md).
-
-- **Sprint 0** — pipeline d'extraction CLI validé sur 10 threads — 1 week-end
-- **Sprint 1** — DB Postgres + admin indexation manuelle, seed 30-50 threads — 2 week-ends
-- **Sprint 2** — web app minimale (auth + recherche + consultation) — 2-3 week-ends
-- **Sprint 3** — couche communautaire (ratings, bookmarks, commentaires) — 2 week-ends
-
-Total : 7-9 week-ends, en pointillé sur 3-4 mois.
+État sprint par sprint, à jour en continu : [roadmap.md](roadmap.md). Ne pas dupliquer cette liste ici — elle dérive systématiquement.
 
 ## 14. Hors scope MVP
 
@@ -364,5 +314,6 @@ Total : 7-9 week-ends, en pointillé sur 3-4 mois.
 - Extension navigateur "indexer ce thread en 1 clic"
 - Ingestion YouTube (transcripts vidéos diag) et Reddit
 - Pool d'embeddings partagés
-- Modèle économique précis (freemium + abonnement, ordre 3-5€/mois)
-- Stratégie de distribution / acquisition
+- Stratégie de distribution / acquisition (au-delà du SEO organique déjà en place)
+
+Le modèle économique est désormais scopé, voir [monetization.md](monetization.md) — ce n'est plus hors scope.
