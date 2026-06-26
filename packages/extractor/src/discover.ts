@@ -99,8 +99,13 @@ export async function discoverThreads(
     const html = await fetchAllowed(pageUrl);
     const links = extractor(html, pageUrl);
     if (links.length === 0) break;
+    const sizeBefore = found.size;
     for (const link of links) found.add(link);
     opts.onPage?.({ page, totalFound: found.size });
+    // Au-delà de la vraie fin du listing, certains forums (phpBB) renvoient la dernière page
+    // valide en boucle plutôt qu'une page vide — si une page ne contient plus aucun thread
+    // inédit, on a atteint la fin réelle malgré un contenu non vide.
+    if (found.size === sizeBefore) break;
   }
   return [...found];
 }
