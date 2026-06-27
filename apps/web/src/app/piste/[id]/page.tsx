@@ -36,10 +36,7 @@ export default async function PistePage({ params }: { params: Promise<{ id: stri
   return (
     <div>
       {probleme && (
-        <Link
-          href={`/diag/${probleme.slug}`}
-          className="text-sm text-ink-500 hover:text-blue-700"
-        >
+        <Link href={`/diag/${probleme.slug}`} className="text-sm text-ink-500 hover:text-blue-700">
           ← Problème : {probleme.titre}
         </Link>
       )}

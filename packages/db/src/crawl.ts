@@ -10,7 +10,9 @@ const NO_PAGE_CAP = 100_000;
 /** Parcourt SOURCES, découvre les threads de chaque sous-forum et les ajoute à la file (idempotent). */
 export async function discoverAll(
   db: Db,
-  opts: { onProgress?: (info: { forum: string; label: string; page: number; totalFound: number }) => void } = {},
+  opts: {
+    onProgress?: (info: { forum: string; label: string; page: number; totalFound: number }) => void;
+  } = {},
 ): Promise<{ found: number; added: number }> {
   let found = 0;
   let added = 0;
@@ -57,7 +59,10 @@ export interface ProcessResult {
 
 /** Ouvre un lot de traitement (un appel `crawl --max N`), pour le dashboard admin. */
 export async function startBatch(db: Db, requestedMax: number): Promise<{ id: string }> {
-  const [row] = await db.insert(crawlBatches).values({ requestedMax }).returning({ id: crawlBatches.id });
+  const [row] = await db
+    .insert(crawlBatches)
+    .values({ requestedMax })
+    .returning({ id: crawlBatches.id });
   return row!;
 }
 
@@ -211,7 +216,10 @@ export interface CrawledThread {
   pistesCreatedExistingProbleme: number | null;
   inputTokens?: number | null;
   outputTokens?: number | null;
-  createdDetail?: { problemes: { id: string; titre: string }[]; pistes: { id: string; titre: string }[] } | null;
+  createdDetail?: {
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  } | null;
 }
 
 /** Détail des threads scannés pour un sous-forum donné, pour le dashboard admin. */
@@ -234,15 +242,21 @@ export async function getThreadsForSubForum(
     .from(crawlQueue)
     .where(sql`${crawlQueue.forum} = ${forum} AND ${crawlQueue.subForumLabel} = ${subForumLabel}`)
     .orderBy(sql`${crawlQueue.discoveredAt} desc`);
-  return rows.map((r) => ({ ...r, discoveredAt: r.discoveredAt.toISOString(), processedAt: r.processedAt?.toISOString() ?? null }));
+  return rows.map((r) => ({
+    ...r,
+    discoveredAt: r.discoveredAt.toISOString(),
+    processedAt: r.processedAt?.toISOString() ?? null,
+  }));
 }
 
 /** Tarif Claude Haiku 4.5 (le seul modèle utilisé pour l'extraction) au 2026-06 : $1/$5 par MTok in/out. */
 const HAIKU_PRICE_PER_MTOK = { input: 1, output: 5 };
 
 export function estimateCostUsd(inputTokens: number, outputTokens: number): number {
-  return (inputTokens / 1_000_000) * HAIKU_PRICE_PER_MTOK.input +
-    (outputTokens / 1_000_000) * HAIKU_PRICE_PER_MTOK.output;
+  return (
+    (inputTokens / 1_000_000) * HAIKU_PRICE_PER_MTOK.input +
+    (outputTokens / 1_000_000) * HAIKU_PRICE_PER_MTOK.output
+  );
 }
 
 export interface CrawlBatch {

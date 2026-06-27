@@ -52,13 +52,19 @@ export default async function LotPage({
             </div>
             {t.status === 'ingested' && (
               <>
-                {(t.createdDetail?.problemes.length ?? 0) + (t.createdDetail?.pistes.length ?? 0) > 0 ? (
+                {(t.createdDetail?.problemes.length ?? 0) + (t.createdDetail?.pistes.length ?? 0) >
+                0 ? (
                   <details className="mt-1 text-sm text-ink-500">
                     <summary className="cursor-pointer hover:text-blue-700">
                       +{t.problemesCreated ?? 0} problème(s), +
-                      {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0)} piste(s)
+                      {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0)}{' '}
+                      piste(s)
                       {t.inputTokens != null && (
-                        <> — {t.inputTokens.toLocaleString('fr-FR')} tokens entrée, {t.outputTokens?.toLocaleString('fr-FR')} tokens sortie</>
+                        <>
+                          {' '}
+                          — {t.inputTokens.toLocaleString('fr-FR')} tokens entrée,{' '}
+                          {t.outputTokens?.toLocaleString('fr-FR')} tokens sortie
+                        </>
                       )}
                     </summary>
                     <ul className="mt-1 ml-4 list-disc">
@@ -73,15 +79,22 @@ export default async function LotPage({
                 ) : (
                   <p className="mt-1 text-sm text-ink-500">
                     +{t.problemesCreated ?? 0} problème(s), +
-                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0)} piste(s)
+                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0)}{' '}
+                    piste(s)
                     {t.inputTokens != null && (
-                      <> — {t.inputTokens.toLocaleString('fr-FR')} tokens entrée, {t.outputTokens?.toLocaleString('fr-FR')} tokens sortie</>
+                      <>
+                        {' '}
+                        — {t.inputTokens.toLocaleString('fr-FR')} tokens entrée,{' '}
+                        {t.outputTokens?.toLocaleString('fr-FR')} tokens sortie
+                      </>
                     )}
                   </p>
                 )}
               </>
             )}
-            {t.status === 'failed' && t.error && <p className="mt-1 text-sm text-red-700">{t.error}</p>}
+            {t.status === 'failed' && t.error && (
+              <p className="mt-1 text-sm text-red-700">{t.error}</p>
+            )}
           </li>
         ))}
       </ul>

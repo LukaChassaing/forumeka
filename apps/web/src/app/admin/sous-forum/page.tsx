@@ -58,11 +58,25 @@ export default async function SousForumPage({
                 ) : (
                   <>
                     +{t.problemesCreated} nouveau{t.problemesCreated === 1 ? '' : 'x'} problème
-                    {t.problemesCreated === 1 ? '' : 's'} trouvé{t.problemesCreated === 1 ? '' : 's'}, +
+                    {t.problemesCreated === 1 ? '' : 's'} trouvé
+                    {t.problemesCreated === 1 ? '' : 's'}, +
                     {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0)}{' '}
-                    nouvelle{(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) === 1 ? '' : 's'}{' '}
-                    piste{(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) === 1 ? '' : 's'} trouvée
-                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) === 1 ? '' : 's'} (+
+                    nouvelle
+                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) ===
+                    1
+                      ? ''
+                      : 's'}{' '}
+                    piste
+                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) ===
+                    1
+                      ? ''
+                      : 's'}{' '}
+                    trouvée
+                    {(t.pistesCreatedNewProbleme ?? 0) + (t.pistesCreatedExistingProbleme ?? 0) ===
+                    1
+                      ? ''
+                      : 's'}{' '}
+                    (+
                     {t.pistesCreatedExistingProbleme ?? 0} pour des problèmes existants, +
                     {t.pistesCreatedNewProbleme ?? 0} pour des nouveaux problèmes)
                   </>
@@ -76,7 +90,9 @@ export default async function SousForumPage({
         ))}
       </ul>
 
-      {threads.length === 0 && <p className="mt-4 text-ink-500">Aucun thread pour ce sous-forum.</p>}
+      {threads.length === 0 && (
+        <p className="mt-4 text-ink-500">Aucun thread pour ce sous-forum.</p>
+      )}
     </div>
   );
 }

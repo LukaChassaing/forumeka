@@ -75,7 +75,9 @@ program
 
 program
   .command('discover-all')
-  .description('Découvre les threads de tous les sous-forums configurés (packages/extractor/src/sources.ts) et les ajoute à la file (idempotent)')
+  .description(
+    'Découvre les threads de tous les sous-forums configurés (packages/extractor/src/sources.ts) et les ajoute à la file (idempotent)',
+  )
   .action(async () => {
     const db = createDb();
     try {

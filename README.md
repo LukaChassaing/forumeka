@@ -14,7 +14,7 @@ Une panne auto a presque toujours déjà été résolue par quelqu'un, sur un fo
 
 ## Ce que fait Forumeka
 
-Tu tapes ton symptôme en langage naturel (*"Clio 3 1.5 dCi cale à chaud"*), Forumeka te remonte les **pistes de diagnostic** déjà discutées sur les forums automobiles, **classées par taux de réussite réel** plutôt que par popularité du sujet — avec la source exacte (l'extrait du message, le lien vers le fil) pour chaque piste.
+Tu tapes ton symptôme en langage naturel (_"Clio 3 1.5 dCi cale à chaud"_), Forumeka te remonte les **pistes de diagnostic** déjà discutées sur les forums automobiles, **classées par taux de réussite réel** plutôt que par popularité du sujet — avec la source exacte (l'extrait du message, le lien vers le fil) pour chaque piste.
 
 L'idée n'est pas de remplacer les forums, mais de leur redonner de la visibilité : Forumeka renvoie systématiquement vers le fil d'origine, et encourage à y poster quand une piste manque encore de confirmation.
 

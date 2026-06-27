@@ -7,7 +7,11 @@ import { isAdminEmail } from '@/lib/admin';
 
 function formatDateTimeFr(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return (
+    d.toLocaleDateString('fr-FR') +
+    ' ' +
+    d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  );
 }
 
 function formatDuration(startedAt: string, finishedAt: string | null): string {
@@ -38,25 +42,32 @@ export default async function TraitementsPage() {
             <Link href={`/admin/traitements/lot?id=${b.id}`} className="block hover:text-blue-700">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-ink-900">{formatDateTimeFr(b.startedAt)}</span>
-                <span className="text-sm text-ink-500">{formatDuration(b.startedAt, b.finishedAt)}</span>
+                <span className="text-sm text-ink-500">
+                  {formatDuration(b.startedAt, b.finishedAt)}
+                </span>
               </div>
               <p className="mt-1 text-sm text-ink-500">
-                {b.threadsProcessed}/{b.requestedMax === 0 ? '∞' : b.requestedMax} threads — +{b.problemesCreated} problème
-                {b.problemesCreated === 1 ? '' : 's'}, +{b.pistesCreated} piste{b.pistesCreated === 1 ? '' : 's'}
+                {b.threadsProcessed}/{b.requestedMax === 0 ? '∞' : b.requestedMax} threads — +
+                {b.problemesCreated} problème
+                {b.problemesCreated === 1 ? '' : 's'}, +{b.pistesCreated} piste
+                {b.pistesCreated === 1 ? '' : 's'}
               </p>
               <p className="mt-1 text-xs text-ink-400">
                 {b.forums.map((f) => `${f.subForumLabel} (${f.count})`).join(', ')}
               </p>
               <p className="mt-1 text-xs text-ink-400">
-                {b.inputTokens.toLocaleString('fr-FR')} tokens entrée, {b.outputTokens.toLocaleString('fr-FR')} tokens
-                sortie — ~{b.estimatedCostUsd.toFixed(3)}$
+                {b.inputTokens.toLocaleString('fr-FR')} tokens entrée,{' '}
+                {b.outputTokens.toLocaleString('fr-FR')} tokens sortie — ~
+                {b.estimatedCostUsd.toFixed(3)}$
               </p>
             </Link>
           </li>
         ))}
       </ul>
 
-      {batches.length === 0 && <p className="mt-4 text-ink-500">Aucun traitement pour l’instant.</p>}
+      {batches.length === 0 && (
+        <p className="mt-4 text-ink-500">Aucun traitement pour l’instant.</p>
+      )}
     </div>
   );
 }
