@@ -41,16 +41,16 @@ Symptômes agrégés, dédupliqués par similarité sémantique.
 
 Causes possibles, rattachées à un problème, dédupliquées par similarité.
 
-| Colonne                                                     | Type         | Notes                          |
-| ----------------------------------------------------------- | ------------ | ------------------------------ |
-| `id`                                                        | UUID PK      |                                |
-| `probleme_id`                                               | UUID FK      |                                |
-| `titre`                                                     | TEXT         | ex: "Capteur PMH"              |
-| `description`                                               | TEXT         | procédure de test/remplacement — colonne en place, **non alimentée** (voir [monetization.md](monetization.md)) |
-| `cout_estime_eur`                                           | NUMRANGE     | ex: `[80, 150]`                |
-| `difficulte`                                                | INTEGER      | 1-5                            |
-| `metadata`                                                  | JSONB        |                                |
-| `source_type`, `source_model`, `reviewed_by`, `reviewed_at` |              | provenance                     |
+| Colonne                                                     | Type     | Notes                                                                                                          |
+| ----------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `id`                                                        | UUID PK  |                                                                                                                |
+| `probleme_id`                                               | UUID FK  |                                                                                                                |
+| `titre`                                                     | TEXT     | ex: "Capteur PMH"                                                                                              |
+| `description`                                               | TEXT     | procédure de test/remplacement — colonne en place, **non alimentée** (voir [monetization.md](monetization.md)) |
+| `cout_estime_eur`                                           | NUMRANGE | ex: `[80, 150]`                                                                                                |
+| `difficulte`                                                | INTEGER  | 1-5                                                                                                            |
+| `metadata`                                                  | JSONB    |                                                                                                                |
+| `source_type`, `source_model`, `reviewed_by`, `reviewed_at` |          | provenance                                                                                                     |
 
 ### `piste_aliases`
 

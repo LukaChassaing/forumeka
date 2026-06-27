@@ -3,7 +3,10 @@ import { notFound } from 'next/navigation';
 import { getProblemeBySlug, getPistesForProbleme } from '@forumeka/db';
 import { db } from '@/lib/db';
 
-function probabilite(threadsConfirmed: number, threadsTotal: number): {
+function probabilite(
+  threadsConfirmed: number,
+  threadsTotal: number,
+): {
   label: string;
   style: string;
 } {

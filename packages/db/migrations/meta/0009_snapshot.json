@@ -81,12 +81,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -94,10 +90,7 @@
       "compositePrimaryKeys": {
         "accounts_provider_provider_account_id_pk": {
           "name": "accounts_provider_provider_account_id_pk",
-          "columns": [
-            "provider",
-            "provider_account_id"
-          ]
+          "columns": ["provider", "provider_account_id"]
         }
       },
       "uniqueConstraints": {},
@@ -135,12 +128,8 @@
           "name": "bookmarks_user_id_users_id_fk",
           "tableFrom": "bookmarks",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -148,12 +137,8 @@
           "name": "bookmarks_thread_id_threads_id_fk",
           "tableFrom": "bookmarks",
           "tableTo": "threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -161,10 +146,7 @@
       "compositePrimaryKeys": {
         "bookmarks_user_id_thread_id_pk": {
           "name": "bookmarks_user_id_thread_id_pk",
-          "columns": [
-            "user_id",
-            "thread_id"
-          ]
+          "columns": ["user_id", "thread_id"]
         }
       },
       "uniqueConstraints": {},
@@ -234,12 +216,8 @@
           "name": "commentaires_thread_id_threads_id_fk",
           "tableFrom": "commentaires",
           "tableTo": "threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -247,12 +225,8 @@
           "name": "commentaires_piste_id_pistes_id_fk",
           "tableFrom": "commentaires",
           "tableTo": "pistes",
-          "columnsFrom": [
-            "piste_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["piste_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -260,12 +234,8 @@
           "name": "commentaires_user_id_users_id_fk",
           "tableFrom": "commentaires",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -462,12 +432,8 @@
           "name": "crawl_queue_batch_id_crawl_batches_id_fk",
           "tableFrom": "crawl_queue",
           "tableTo": "crawl_batches",
-          "columnsFrom": [
-            "batch_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -477,9 +443,7 @@
         "crawl_queue_thread_url_unique": {
           "name": "crawl_queue_thread_url_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "thread_url"
-          ]
+          "columns": ["thread_url"]
         }
       },
       "policies": {},
@@ -567,12 +531,8 @@
           "name": "piste_aliases_piste_id_pistes_id_fk",
           "tableFrom": "piste_aliases",
           "tableTo": "pistes",
-          "columnsFrom": [
-            "piste_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["piste_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -645,12 +605,8 @@
           "name": "piste_ratings_piste_id_pistes_id_fk",
           "tableFrom": "piste_ratings",
           "tableTo": "pistes",
-          "columnsFrom": [
-            "piste_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["piste_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -658,12 +614,8 @@
           "name": "piste_ratings_user_id_users_id_fk",
           "tableFrom": "piste_ratings",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -671,12 +623,8 @@
           "name": "piste_ratings_probleme_id_problemes_id_fk",
           "tableFrom": "piste_ratings",
           "tableTo": "problemes",
-          "columnsFrom": [
-            "probleme_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["probleme_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -686,11 +634,7 @@
         "piste_ratings_piste_id_user_id_probleme_id_unique": {
           "name": "piste_ratings_piste_id_user_id_probleme_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "piste_id",
-            "user_id",
-            "probleme_id"
-          ]
+          "columns": ["piste_id", "user_id", "probleme_id"]
         }
       },
       "policies": {},
@@ -777,12 +721,8 @@
           "name": "pistes_probleme_id_problemes_id_fk",
           "tableFrom": "pistes",
           "tableTo": "problemes",
-          "columnsFrom": [
-            "probleme_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["probleme_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -790,12 +730,8 @@
           "name": "pistes_reviewed_by_users_id_fk",
           "tableFrom": "pistes",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewed_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -892,12 +828,8 @@
           "name": "problemes_reviewed_by_users_id_fk",
           "tableFrom": "problemes",
           "tableTo": "users",
-          "columnsFrom": [
-            "reviewed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewed_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -907,9 +839,7 @@
         "problemes_slug_unique": {
           "name": "problemes_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -973,12 +903,8 @@
           "name": "search_log_user_id_users_id_fk",
           "tableFrom": "search_log",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -986,12 +912,8 @@
           "name": "search_log_clicked_thread_id_threads_id_fk",
           "tableFrom": "search_log",
           "tableTo": "threads",
-          "columnsFrom": [
-            "clicked_thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clicked_thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1031,12 +953,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1102,12 +1020,8 @@
           "name": "thread_piste_mentions_thread_id_threads_id_fk",
           "tableFrom": "thread_piste_mentions",
           "tableTo": "threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1115,12 +1029,8 @@
           "name": "thread_piste_mentions_piste_id_pistes_id_fk",
           "tableFrom": "thread_piste_mentions",
           "tableTo": "pistes",
-          "columnsFrom": [
-            "piste_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["piste_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1130,10 +1040,7 @@
         "thread_piste_mentions_thread_id_piste_id_unique": {
           "name": "thread_piste_mentions_thread_id_piste_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "thread_id",
-            "piste_id"
-          ]
+          "columns": ["thread_id", "piste_id"]
         }
       },
       "policies": {},
@@ -1234,12 +1141,8 @@
           "name": "threads_cause_finale_id_pistes_id_fk",
           "tableFrom": "threads",
           "tableTo": "pistes",
-          "columnsFrom": [
-            "cause_finale_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cause_finale_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1249,9 +1152,7 @@
         "threads_url_unique": {
           "name": "threads_url_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "url"
-          ]
+          "columns": ["url"]
         }
       },
       "policies": {},
@@ -1308,9 +1209,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1345,10 +1244,7 @@
       "compositePrimaryKeys": {
         "verification_tokens_identifier_token_pk": {
           "name": "verification_tokens_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {},
@@ -1361,50 +1257,27 @@
     "public.crawl_status": {
       "name": "crawl_status",
       "schema": "public",
-      "values": [
-        "discovered",
-        "processing",
-        "ingested",
-        "failed",
-        "skipped"
-      ]
+      "values": ["discovered", "processing", "ingested", "failed", "skipped"]
     },
     "public.satisfaction": {
       "name": "satisfaction",
       "schema": "public",
-      "values": [
-        "found",
-        "partial",
-        "none"
-      ]
+      "values": ["found", "partial", "none"]
     },
     "public.source_type": {
       "name": "source_type",
       "schema": "public",
-      "values": [
-        "human",
-        "llm",
-        "user_contribution"
-      ]
+      "values": ["human", "llm", "user_contribution"]
     },
     "public.statut_dans_thread": {
       "name": "statut_dans_thread",
       "schema": "public",
-      "values": [
-        "confirmed",
-        "tested_neutral",
-        "tested_negative",
-        "mentioned"
-      ]
+      "values": ["confirmed", "tested_neutral", "tested_negative", "mentioned"]
     },
     "public.verdict": {
       "name": "verdict",
       "schema": "public",
-      "values": [
-        "worked",
-        "failed",
-        "partial"
-      ]
+      "values": ["worked", "failed", "partial"]
     }
   },
   "schemas": {},

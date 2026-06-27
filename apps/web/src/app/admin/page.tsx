@@ -13,7 +13,11 @@ function formatDateFr(iso: string | null): string {
 
 function formatDateTimeFr(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return (
+    d.toLocaleDateString('fr-FR') +
+    ' ' +
+    d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  );
 }
 
 export default async function AdminPage() {
@@ -61,13 +65,15 @@ export default async function AdminPage() {
                       <span>{s.subForumLabel}</span>
                       <span className="text-sm text-ink-500">
                         {pct}% — {s.ingested}/{s.discovered} threads — du{' '}
-                        {formatDateFr(s.oldestThreadDate)} au {formatDateFr(new Date().toISOString().slice(0, 10))}
+                        {formatDateFr(s.oldestThreadDate)} au{' '}
+                        {formatDateFr(new Date().toISOString().slice(0, 10))}
                       </span>
                     </Link>
                     {s.lastDiscoverRun && (
                       <p className="mt-1 text-xs text-ink-400">
                         Dernier scan : {s.lastDiscoverRun.threadsFound} threads sur{' '}
-                        {s.lastDiscoverRun.pagesScanned} pages, le {formatDateTimeFr(s.lastDiscoverRun.ranAt)}
+                        {s.lastDiscoverRun.pagesScanned} pages, le{' '}
+                        {formatDateTimeFr(s.lastDiscoverRun.ranAt)}
                       </p>
                     )}
                   </li>
@@ -78,7 +84,9 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      {progress.length === 0 && <p className="mt-4 text-ink-500">Aucune donnée de crawl pour l’instant.</p>}
+      {progress.length === 0 && (
+        <p className="mt-4 text-ink-500">Aucune donnée de crawl pour l’instant.</p>
+      )}
     </div>
   );
 }
