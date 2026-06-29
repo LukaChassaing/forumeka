@@ -66,23 +66,33 @@
 - [x] Page piste : sources reformatées, fil d'Ariane, extrait en italique
 - [x] Header sticky avec recherche permanente (sauf sur l'accueil)
 
-## Monétisation V1 🟡 scope figé, implémentation à faire
+## Monétisation V1 🟡 gating en place, Stripe à faire
 
 Scope détaillé : [monetization.md](monetization.md).
 
 - [x] Pricing, gating et contraintes techniques actés
-- [ ] Table `unlocks` (abonnement actif + unlocks gratuits consommés)
-- [ ] Intégration Stripe Checkout (mensuel 4,99€ / annuel 39,99€) + PayPal comme moyen de paiement natif
-- [ ] Verrouillage côté serveur des sources forum + badge de fiabilité (jamais de cloaking)
-- [ ] Tri aléatoire des pistes sur la page diagnostic (`ORDER BY random()`)
+- [x] Table `unlocks` (`user_id`, `piste_id`, `type` free/subscription, `expires_at`) + colonnes abonnement sur `users`
+- [x] Verrouillage côté serveur des sources forum + badge de fiabilité (jamais de cloaking) — sources forum non récupérées du tout si non débloqué
+- [x] Ordre aléatoire des pistes sur la page diagnostic pour les non-abonnés (`ORDER BY random()`), ordre réel réservé aux abonnés
+- [x] 5 déverrouillages gratuits à vie par compte, consommés un par un (`/piste/[id]`)
+- [x] Page `/compte` (statut abonnement, compteur gratuits, historique des déverrouillages)
+- [ ] Intégration Stripe Checkout (mensuel 4,99€ / annuel 39,99€) + PayPal comme moyen de paiement natif — `/abonnement` est un lien mort en attendant
+- [ ] Webhook Stripe pour mettre à jour `users.subscription_status`/`subscription_expires_at`
 - [ ] CTA "piste sans confirmation → forum"
+
+## Compte utilisateur et navigation ✅ mergé
+
+- [x] Menu déroulant "Compte et abonnement" dans le header (avatar retiré, juste libellé + chevron)
+- [x] Sidebar "Marques les plus indexées" (gauche) et "Consulté récemment" (droite) sur grand écran, table `consultations` pour l'historique
+- [x] Pages `/forums` et `/vehicules` (listes cliquables depuis les tuiles de stats de la home)
+- [x] Thème clair/sombre (bouton dans le header, palette via variables CSS, persisté en `localStorage`)
+- [x] Footer + pages légales (`/mentions-legales`, `/cgu`, `/confidentialite`, `/contact`)
+- [x] Indicateur de chargement entre les pages (`app/loading.tsx`)
 
 ## Prochaines étapes (ordre conseillé)
 
-**Priorité actuelle : indexer le maximum de contenu, puis monétiser.**
-
-1. **Dresser une liste de forums cibles** (au-delà de Caradisiac/forum4x4.org) — marques généralistes, forums spécialisés par modèle, forums anglophones — pour élargir la couverture avant tout.
-2. **Indexer le maximum de threads possible** sur ces forums via le pipeline existant (discover → extract → ingest), en continu.
-3. Appliquer le seed (30 threads actuels + ce qui suit) sur la branche Neon de **prod**.
-4. Lever le blocage Cloudflare sur Caradisiac pour récupérer cette source.
-5. Implémenter la monétisation V1 (table `unlocks`, intégration Stripe, gating serveur) une fois le contenu suffisant — voir [monetization.md](monetization.md).
+1. **Intégrer Stripe** (Checkout + webhook) pour rendre l'abonnement réellement payant — c'est le seul morceau qui manque pour que la monétisation V1 soit complète.
+2. **Dresser une liste de forums cibles** (au-delà de Caradisiac/forum4x4.org) pour élargir la couverture une fois la monétisation bouclée.
+3. **Indexer le maximum de threads possible** sur ces forums via le pipeline existant (discover → extract → ingest), en continu.
+4. Appliquer le seed (30 threads actuels + ce qui suit) sur la branche Neon de **prod**.
+5. Lever le blocage Cloudflare sur Caradisiac pour récupérer cette source.

@@ -1,6 +1,14 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { Db } from './client.js';
-import { problemes, pistes, pisteAliases, threads, threadPisteMentions } from './schema.js';
+import {
+  problemes,
+  pistes,
+  pisteAliases,
+  threads,
+  threadPisteMentions,
+  unlocks,
+  consultations,
+} from './schema.js';
 
 export interface ProblemeSearchResult {
   id: string;
@@ -91,8 +99,16 @@ export interface PisteWithStats {
   appTotal: number;
 }
 
-/** Pistes d'un problème, triées par taux de succès forum (signal app prioritaire au Sprint 3, §7 architecture). */
-export async function getPistesForProbleme(db: Db, problemeId: string): Promise<PisteWithStats[]> {
+/**
+ * Pistes d'un problème, triées par taux de succès forum (signal app prioritaire au Sprint 3, §7
+ * architecture) — ou en ordre aléatoire si `randomize` (monétisation V1, § monetization.md :
+ * l'ordre réel des pistes est verrouillé tant que l'utilisateur n'a pas d'abonnement actif).
+ */
+export async function getPistesForProbleme(
+  db: Db,
+  problemeId: string,
+  randomize = false,
+): Promise<PisteWithStats[]> {
   const rows = await db.execute<{
     id: string;
     titre: string;
@@ -116,8 +132,12 @@ export async function getPistesForProbleme(db: Db, problemeId: string): Promise<
     LEFT JOIN piste_stats ps ON ps.piste_id = p.id
     WHERE p.probleme_id = ${problemeId}
     ORDER BY
-      CASE WHEN coalesce(ps.threads_total, 0) = 0 THEN 0
-           ELSE coalesce(ps.threads_confirmed, 0)::float / ps.threads_total END DESC
+      ${
+        randomize
+          ? sql`random()`
+          : sql`CASE WHEN coalesce(ps.threads_total, 0) = 0 THEN 0
+           ELSE coalesce(ps.threads_confirmed, 0)::float / ps.threads_total END DESC`
+      }
   `);
 
   return rows.map((r) => ({
@@ -174,4 +194,141 @@ export async function getAliasesForPiste(db: Db, pisteId: string): Promise<strin
     .from(pisteAliases)
     .where(eq(pisteAliases.pisteId, pisteId));
   return rows.map((r) => r.alias);
+}
+
+/** Nombre de déverrouillages gratuits à vie offerts par compte (§ monetization.md). */
+export const FREE_UNLOCKS_PER_USER = 5;
+
+export async function hasActiveSubscription(db: Db, userId: string): Promise<boolean> {
+  const user = await db.query.users.findFirst({ where: (u, { eq: eqOp }) => eqOp(u.id, userId) });
+  if (!user || user.subscriptionStatus !== 'active') return false;
+  return !user.subscriptionExpiresAt || user.subscriptionExpiresAt > new Date();
+}
+
+export async function countFreeUnlocksUsed(db: Db, userId: string): Promise<number> {
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(unlocks)
+    .where(and(eq(unlocks.userId, userId), eq(unlocks.type, 'free')));
+  return Number(rows[0]?.count ?? 0);
+}
+
+/** Vrai si l'utilisateur voit déjà la fiabilité réelle + les sources forum de cette piste. */
+export async function isPisteUnlocked(db: Db, userId: string, pisteId: string): Promise<boolean> {
+  if (await hasActiveSubscription(db, userId)) return true;
+  const row = await db.query.unlocks.findFirst({
+    where: (u, { and: andOp, eq: eqOp }) => andOp(eqOp(u.userId, userId), eqOp(u.pisteId, pisteId)),
+  });
+  return row !== undefined;
+}
+
+/** Mêmes règles qu'{@link isPisteUnlocked}, pour une liste de pistes (évite le N+1 sur /diag). */
+export async function getUnlockedPisteIds(
+  db: Db,
+  userId: string,
+  pisteIds: string[],
+): Promise<Set<string>> {
+  if (pisteIds.length === 0) return new Set();
+  if (await hasActiveSubscription(db, userId)) return new Set(pisteIds);
+  const rows = await db
+    .select({ pisteId: unlocks.pisteId })
+    .from(unlocks)
+    .where(and(eq(unlocks.userId, userId), inArray(unlocks.pisteId, pisteIds)));
+  return new Set(rows.map((r) => r.pisteId));
+}
+
+export interface FreeUnlockResult {
+  ok: boolean;
+  reason?: 'already_unlocked' | 'limit_reached';
+}
+
+export interface UnlockedPiste {
+  pisteId: string;
+  pisteTitre: string;
+  problemeSlug: string;
+  problemeTitre: string;
+  type: 'free' | 'subscription';
+  createdAt: Date;
+}
+
+/** Pistes débloquées par l'utilisateur (page /compte), les plus récentes en premier. */
+export async function getUnlocksForUser(db: Db, userId: string): Promise<UnlockedPiste[]> {
+  const rows = await db
+    .select({
+      pisteId: pistes.id,
+      pisteTitre: pistes.titre,
+      problemeSlug: problemes.slug,
+      problemeTitre: problemes.titre,
+      type: unlocks.type,
+      createdAt: unlocks.createdAt,
+    })
+    .from(unlocks)
+    .innerJoin(pistes, eq(pistes.id, unlocks.pisteId))
+    .innerJoin(problemes, eq(problemes.id, pistes.problemeId))
+    .where(eq(unlocks.userId, userId))
+    .orderBy(desc(unlocks.createdAt));
+  return rows;
+}
+
+/** Consomme un déverrouillage gratuit pour cette piste, si le quota de 3 à vie n'est pas atteint. */
+export async function unlockPisteFree(
+  db: Db,
+  userId: string,
+  pisteId: string,
+): Promise<FreeUnlockResult> {
+  if (await isPisteUnlocked(db, userId, pisteId)) {
+    return { ok: true, reason: 'already_unlocked' };
+  }
+  const used = await countFreeUnlocksUsed(db, userId);
+  if (used >= FREE_UNLOCKS_PER_USER) {
+    return { ok: false, reason: 'limit_reached' };
+  }
+  await db.insert(unlocks).values({ userId, pisteId, type: 'free' });
+  return { ok: true };
+}
+
+/** Enregistre une visite (page /compte, sidebar d'historique) — upsert, une ligne par cible vue. */
+export async function recordConsultation(
+  db: Db,
+  userId: string,
+  type: 'probleme' | 'piste',
+  refId: string,
+  titre: string,
+  href: string,
+): Promise<void> {
+  await db
+    .insert(consultations)
+    .values({ userId, type, refId, titre, href })
+    .onConflictDoUpdate({
+      target: [consultations.userId, consultations.type, consultations.refId],
+      set: { titre, href, vuLe: new Date() },
+    });
+}
+
+export interface Consultation {
+  type: 'probleme' | 'piste';
+  refId: string;
+  titre: string;
+  href: string;
+  vuLe: Date;
+}
+
+export async function getRecentConsultations(
+  db: Db,
+  userId: string,
+  limit = 8,
+): Promise<Consultation[]> {
+  const rows = await db
+    .select({
+      type: consultations.type,
+      refId: consultations.refId,
+      titre: consultations.titre,
+      href: consultations.href,
+      vuLe: consultations.vuLe,
+    })
+    .from(consultations)
+    .where(eq(consultations.userId, userId))
+    .orderBy(desc(consultations.vuLe))
+    .limit(limit);
+  return rows;
 }
