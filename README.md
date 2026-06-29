@@ -1,62 +1,33 @@
 # Forumeka
 
-> Diagnostic auto collaboratif — pistes de panne classées par taux de succès, sourcées forums et retours users.
+[![Live](https://img.shields.io/badge/live-forumeka.vercel.app-black?logo=vercel&logoColor=white)](https://forumeka.vercel.app)
+[![Hosted on Vercel](https://img.shields.io/badge/hosted%20on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
+[![Database Neon](https://img.shields.io/badge/database-Neon%20Postgres-00E599?logo=postgresql&logoColor=white)](https://neon.tech)
+[![CI](https://github.com/LukaChassaing/forumeka/actions/workflows/ci.yml/badge.svg)](https://github.com/LukaChassaing/forumeka/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-all%20rights%20reserved-lightgrey)](LICENSE)
 
-## Quoi
+> La solution à ton problème de voiture est forcément quelque part. Il suffit de savoir où chercher.
 
-Un utilisateur tape un symptôme en langage naturel (_"Clio 3 1.5 dCi cale à chaud"_) et obtient les **pistes de diagnostic** classées par taux de succès, avec leurs **sources forums** et les **retours d'autres users** post-réparation.
+## Le problème
 
-## Structure
+Une panne auto a presque toujours déjà été résolue par quelqu'un, sur un forum, il y a parfois plusieurs années — noyée dans 14 pages de discussion. Trouver la bonne réponse demande de tout lire, de trier le vrai du faux, et de recouper plusieurs avis contradictoires.
 
-```
-forumeka/
-├── apps/
-│   └── web/                 # Next.js 15 — Sprint 2
-├── packages/
-│   ├── extractor/           # CLI d'extraction (Sprint 0) ✅
-│   └── db/                  # Schéma Drizzle + ingestion (Sprint 1) ✅
-└── docs/
-    ├── architecture.md      # Cadrage technique complet
-    └── roadmap.md           # État sprint par sprint
-```
+## Ce que fait Forumeka
 
-## Démarrage
+Tu tapes ton symptôme en langage naturel (_"Clio 3 1.5 dCi cale à chaud"_), Forumeka te remonte les **pistes de diagnostic** déjà discutées sur les forums automobiles, **classées par taux de réussite réel** plutôt que par popularité du sujet — avec la source exacte (l'extrait du message, le lien vers le fil) pour chaque piste.
 
-```bash
-pnpm install
-cp .env.example .env        # remplir ANTHROPIC_API_KEY, DATABASE_URL
-pnpm --filter @forumeka/extractor build
-pnpm --filter @forumeka/extractor exec forumeka extract <url-thread-caradisiac>
+L'idée n'est pas de remplacer les forums, mais de leur redonner de la visibilité : Forumeka renvoie systématiquement vers le fil d'origine, et encourage à y poster quand une piste manque encore de confirmation.
 
-# DB : migrations + extensions PG + vue piste_stats
-pnpm --filter @forumeka/db build
-pnpm --filter @forumeka/db db:migrate
+## Pour qui
 
-# Ingestion d'un ExtractionRun JSON (dédup par similarité)
-pnpm --filter @forumeka/db exec forumeka-db ingest out/<fichier>.json
-```
+Toute personne qui galère sur une panne et n'a pas envie (ou pas le temps) de fouiller des heures de forum pour trouver la bonne piste.
 
-## Stack
+## Modèle
 
-Next.js 15 · TypeScript · Tailwind · Postgres + pg_trgm · Drizzle · Auth.js + Resend · pg-boss · Claude Haiku/Sonnet · Vercel + Neon.
+Gratuit pour chercher et consulter les pistes connues. Un abonnement (mensuel ou annuel) débloque le détail des pistes les plus fiables et leurs sources. Détails : [docs/monetization.md](docs/monetization.md).
 
-Détails et décisions : [docs/architecture.md](docs/architecture.md).
+## En savoir plus
 
-## État
-
-Sprints 0, 1 et 2 mergés. **MVP déployé en production** : [forumeka.vercel.app](https://forumeka.vercel.app) (Vercel + Neon Frankfurt, auth magic link via Resend sur `mail.forumeka.fr`).
-
-**En cours (PR #8, non mergée)** : extension du pipeline d'extraction à un 2e forum, **forum4x4.org** (moteur phpBB3), avec un parser générique réutilisable pour tout forum phpBB3. Pilote de 5 threads validé de bout en bout (discover → extract → ingest → refresh-stats → affichage UI). Corrections associées : fermeture propre des connexions DB en CLI, lien de chaque source forum vers le post précis cité (deep-link `?p=...#p...`) plutôt que la page 1 du thread.
-
-Sprint 3 (couche communautaire) à venir. Voir [docs/roadmap.md](docs/roadmap.md).
-
-### Déploiement (Vercel)
-
-- **Hosting** : Vercel, projet `forumeka`, Root Directory = `apps/web`, Production branch = `main`.
-- **DB** : Neon Postgres (région `eu-central-1`, pg_trgm activé), connectée via `DATABASE_URL` (host pooler).
-- **Email** : Resend, domaine vérifié `mail.forumeka.fr` (DNS chez IONOS), `RESEND_FROM=noreply@mail.forumeka.fr`.
-- **Build Command custom** (le monorepo pnpm n'est pas buildé par défaut par Vercel — ses dépendances workspace doivent être construites avant l'app), versionné dans [`apps/web/vercel.json`](apps/web/vercel.json) :
-  ```
-  cd ../.. && pnpm --filter @forumeka/extractor build && pnpm --filter @forumeka/db build && pnpm --filter @forumeka/web build
-  ```
-- **Variables d'env requises** : `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, `RESEND_FROM`.
+- [docs/architecture.md](docs/architecture.md) — choix techniques et cadrage
+- [docs/roadmap.md](docs/roadmap.md) — état d'avancement par sprint
+- [docs/development.md](docs/development.md) — installation, commandes, déploiement

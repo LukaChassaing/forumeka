@@ -52,7 +52,19 @@ export interface IngestResult {
   threadId: string;
   problemeIds: string[];
   pisteIds: string[];
-  created: { problemes: number; pistes: number };
+  created: {
+    problemes: number;
+    pistes: number;
+    /** Pistes créées pour un problème nouvellement créé dans ce même run. */
+    pistesNewProbleme: number;
+    /** Pistes créées pour un problème qui existait déjà avant ce run. */
+    pistesExistingProbleme: number;
+  };
+  /** Titres des problèmes/pistes nouvellement créés, pour affichage détaillé (§ dashboard admin). */
+  createdDetail: {
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  };
 }
 
 async function findClosest(
@@ -77,6 +89,8 @@ async function findClosest(
 export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<IngestResult> {
   let createdProblemes = 0;
   let createdPistes = 0;
+  let createdPistesNewProbleme = 0;
+  let createdPistesExistingProbleme = 0;
 
   const existingThread = await db.query.threads.findFirst({
     where: (t, { eq }) => eq(t.url, run.thread.url),
@@ -101,6 +115,8 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
 
   const problemeIds: string[] = [];
   const pisteIds: string[] = [];
+  const createdProblemesDetail: { id: string; titre: string }[] = [];
+  const createdPistesDetail: { id: string; titre: string }[] = [];
 
   for (const item of run.extraction.problemes) {
     const closestProbleme = await findClosest(db, problemes, item.probleme.titre);
@@ -120,7 +136,11 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
           })
           .returning({ id: problemes.id })
       )[0]!.id;
-    if (!closestProbleme) createdProblemes++;
+    const isNewProbleme = !closestProbleme;
+    if (isNewProbleme) {
+      createdProblemes++;
+      createdProblemesDetail.push({ id: problemeId, titre: item.probleme.titre });
+    }
     problemeIds.push(problemeId);
 
     let causeFinalePisteId: string | undefined;
@@ -146,6 +166,9 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
         )[0]!.id;
       if (!closestPiste) {
         createdPistes++;
+        if (isNewProbleme) createdPistesNewProbleme++;
+        else createdPistesExistingProbleme++;
+        createdPistesDetail.push({ id: pisteId, titre: piste.titre });
       } else {
         await db.insert(pisteAliases).values({ pisteId, alias: piste.titre }).onConflictDoNothing();
       }
@@ -180,6 +203,15 @@ export async function ingestExtractionRun(db: Db, run: ExtractionRun): Promise<I
     threadId,
     problemeIds,
     pisteIds,
-    created: { problemes: createdProblemes, pistes: createdPistes },
+    created: {
+      problemes: createdProblemes,
+      pistes: createdPistes,
+      pistesNewProbleme: createdPistesNewProbleme,
+      pistesExistingProbleme: createdPistesExistingProbleme,
+    },
+    createdDetail: {
+      problemes: createdProblemesDetail,
+      pistes: createdPistesDetail,
+    },
   };
 }

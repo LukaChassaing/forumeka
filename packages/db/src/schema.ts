@@ -23,6 +23,21 @@ export const statutPisteEnum = pgEnum('statut_dans_thread', [
 ]);
 export const verdictEnum = pgEnum('verdict', ['worked', 'failed', 'partial']);
 export const satisfactionEnum = pgEnum('satisfaction', ['found', 'partial', 'none']);
+export const crawlStatusEnum = pgEnum('crawl_status', [
+  'discovered',
+  'processing',
+  'ingested',
+  'failed',
+  'skipped',
+]);
+export const unlockTypeEnum = pgEnum('unlock_type', ['free', 'subscription']);
+export const consultationTypeEnum = pgEnum('consultation_type', ['probleme', 'piste']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'none',
+  'active',
+  'canceled',
+  'past_due',
+]);
 
 /** Schéma Auth.js (DrizzleAdapter) — magic link Resend, voir §11/§12 architecture. */
 export const users = pgTable('users', {
@@ -32,6 +47,10 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified', { withTimezone: true }),
   image: text('image'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /** Monétisation V1 (§ monetization.md) — abonnement Stripe. */
+  stripeCustomerId: text('stripe_customer_id').unique(),
+  subscriptionStatus: subscriptionStatusEnum('subscription_status').notNull().default('none'),
+  subscriptionExpiresAt: timestamp('subscription_expires_at', { withTimezone: true }),
 });
 
 export const accounts = pgTable(
@@ -202,3 +221,85 @@ export const searchLog = pgTable('search_log', {
   satisfaction: satisfactionEnum('satisfaction'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Un lot = un appel `forumeka-db crawl --max N` ; regroupe les threads qu'il a traités (§ dashboard admin). */
+export const crawlBatches = pgTable('crawl_batches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  requestedMax: integer('requested_max').notNull(),
+  threadsProcessed: integer('threads_processed').notNull().default(0),
+  problemesCreated: integer('problemes_created').notNull().default(0),
+  pistesCreated: integer('pistes_created').notNull().default(0),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+});
+
+/** File d'indexation persistante : permet de lancer/relancer le crawl sans perdre la progression (§ roadmap indexation). */
+export const crawlQueue = pgTable('crawl_queue', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  threadUrl: text('thread_url').notNull().unique(),
+  forum: text('forum').notNull(),
+  subForumLabel: text('sub_forum_label'),
+  status: crawlStatusEnum('status').notNull().default('discovered'),
+  attempts: integer('attempts').notNull().default(0),
+  error: text('error'),
+  discoveredAt: timestamp('discovered_at', { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp('processed_at', { withTimezone: true }),
+  problemesCreated: integer('problemes_created'),
+  pistesCreatedNewProbleme: integer('pistes_created_new_probleme'),
+  pistesCreatedExistingProbleme: integer('pistes_created_existing_probleme'),
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
+  batchId: uuid('batch_id').references(() => crawlBatches.id),
+  /** Titres des problèmes/pistes nouvellement créés par ce thread : { problemes: [{id,titre}], pistes: [{id,titre}] }. */
+  createdDetail: jsonb('created_detail').$type<{
+    problemes: { id: string; titre: string }[];
+    pistes: { id: string; titre: string }[];
+  }>(),
+});
+
+/** Instantané d'un passage de discover-all sur un sous-forum : combien de pages/threads à cette date. */
+export const discoverRuns = pgTable('discover_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  forum: text('forum').notNull(),
+  subForumLabel: text('sub_forum_label').notNull(),
+  ranAt: timestamp('ran_at', { withTimezone: true }).notNull().defaultNow(),
+  pagesScanned: integer('pages_scanned').notNull(),
+  threadsFound: integer('threads_found').notNull(),
+});
+
+/** Historique de consultation (page /compte, sidebar) — un upsert par visite, dédupliqué. */
+export const consultations = pgTable(
+  'consultations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: consultationTypeEnum('type').notNull(),
+    refId: uuid('ref_id').notNull(),
+    titre: text('titre').notNull(),
+    href: text('href').notNull(),
+    vuLe: timestamp('vu_le', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.type, table.refId)],
+);
+
+/** Déverrouillages de pistes (gratuits à vie ou via abonnement actif) — § monetization.md. */
+export const unlocks = pgTable(
+  'unlocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    pisteId: uuid('piste_id')
+      .notNull()
+      .references(() => pistes.id, { onDelete: 'cascade' }),
+    type: unlockTypeEnum('type').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.pisteId)],
+);

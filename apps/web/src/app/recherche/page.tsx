@@ -27,8 +27,8 @@ export default async function RecherchePage({
         <>
           <p className="mt-6 text-ink-700">
             <span className="font-semibold text-ink-900">{results.length}</span> problème
-            {results.length === 1 ? '' : 's'} trouvé{results.length === 1 ? '' : 's'} sur les
-            forums :
+            {results.length === 1 ? '' : 's'} trouvé{results.length === 1 ? '' : 's'} sur les forums
+            :
           </p>
 
           <ul className="mt-4 space-y-3">
@@ -39,9 +39,7 @@ export default async function RecherchePage({
                     🔧
                   </span>
                   <div className="flex-1">
-                    <p className="font-medium text-ink-900 group-hover:text-blue-700">
-                      {p.titre}
-                    </p>
+                    <p className="font-medium text-ink-900 group-hover:text-blue-700">{p.titre}</p>
                     <p className="mt-1 text-sm text-ink-500">
                       Véhicule : {p.vehicules.join(' / ')}
                     </p>

@@ -13,6 +13,8 @@ export interface ExtractOptions {
 export interface ExtractResult {
   model: string;
   extraction: Extraction;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 function stripCodeFences(text: string): string {
@@ -50,5 +52,10 @@ export async function extractFromThread(
     throw new Error(`JSON invalide en sortie LLM : ${(e as Error).message}\n---\n${raw}`);
   }
   const extraction = ExtractionSchema.parse(parsed);
-  return { model, extraction };
+  return {
+    model,
+    extraction,
+    inputTokens: message.usage.input_tokens,
+    outputTokens: message.usage.output_tokens,
+  };
 }
