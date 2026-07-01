@@ -8,7 +8,10 @@ import {
   threadPisteMentions,
   unlocks,
   consultations,
+  users,
 } from './schema.js';
+
+export type SubscriptionStatus = 'none' | 'active' | 'canceled' | 'past_due';
 
 export interface ProblemeSearchResult {
   id: string;
@@ -331,4 +334,63 @@ export async function getRecentConsultations(
     .orderBy(desc(consultations.vuLe))
     .limit(limit);
   return rows;
+}
+
+// --- Abonnement Stripe (§ monetization.md) -------------------------------------------------------
+
+export async function getUserById(db: Db, userId: string) {
+  return db.query.users.findFirst({ where: (u, { eq: eqOp }) => eqOp(u.id, userId) });
+}
+
+/** Retrouve le compte à partir de l'ID client Stripe (webhook subscription.updated/deleted). */
+export async function getUserByStripeCustomerId(db: Db, stripeCustomerId: string) {
+  return db.query.users.findFirst({
+    where: (u, { eq: eqOp }) => eqOp(u.stripeCustomerId, stripeCustomerId),
+  });
+}
+
+/** Lie un compte à son client Stripe (première souscription). */
+export async function setUserStripeCustomerId(
+  db: Db,
+  userId: string,
+  stripeCustomerId: string,
+): Promise<void> {
+  await db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId));
+}
+
+/**
+ * Met à jour l'état d'abonnement d'un compte (appelé par le webhook Stripe uniquement — jamais
+ * de confiance dans le retour client de Checkout). `expiresAt` = fin de la période payée en cours.
+ */
+export async function updateUserSubscription(
+  db: Db,
+  userId: string,
+  status: SubscriptionStatus,
+  expiresAt: Date | null,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ subscriptionStatus: status, subscriptionExpiresAt: expiresAt })
+    .where(eq(users.id, userId));
+}
+
+/**
+ * Traduit un statut d'abonnement Stripe vers l'enum interne. Stripe expose plus de valeurs que ce
+ * qu'on suit : on ne distingue que actif / en défaut de paiement / annulé (§ monetization.md).
+ */
+export function mapStripeSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
+  switch (stripeStatus) {
+    case 'active':
+    case 'trialing':
+      return 'active';
+    case 'past_due':
+    case 'unpaid':
+      return 'past_due';
+    case 'canceled':
+    case 'incomplete_expired':
+      return 'canceled';
+    default:
+      // incomplete, paused, etc. : pas encore payant, on reste sur "none".
+      return 'none';
+  }
 }

@@ -8,6 +8,7 @@ import {
 } from '@forumeka/db';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
+import { openBillingPortal } from '@/app/abonnement/actions';
 
 function formatDateFr(date: Date): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -49,9 +50,19 @@ export default async function ComptePage() {
           </span>
         </div>
         {subscribed ? (
-          <p className="mt-3 text-sm text-ink-700">
-            Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes.
-          </p>
+          <>
+            <p className="mt-3 text-sm text-ink-700">
+              Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes.
+            </p>
+            <form action={openBillingPortal} className="mt-4">
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-900 hover:bg-ink-50"
+              >
+                Gérer mon abonnement
+              </button>
+            </form>
+          </>
         ) : (
           <>
             <p className="mt-3 text-sm text-ink-700">
@@ -110,9 +121,7 @@ export default async function ComptePage() {
                       Problème : {u.problemeTitre}
                     </Link>
                   </div>
-                  <span className="shrink-0 text-xs text-ink-400">
-                    {formatDateFr(u.createdAt)}
-                  </span>
+                  <span className="shrink-0 text-xs text-ink-400">{formatDateFr(u.createdAt)}</span>
                 </li>
               ))}
             </ul>
