@@ -360,18 +360,46 @@ export async function setUserStripeCustomerId(
 
 /**
  * Met à jour l'état d'abonnement d'un compte (appelé par le webhook Stripe uniquement — jamais
- * de confiance dans le retour client de Checkout). `expiresAt` = fin de la période payée en cours.
+ * de confiance dans le retour client de Checkout). `expiresAt` = fin de la période payée en cours ;
+ * `cancelAtPeriodEnd` = résiliation programmée (accès conservé jusqu'à `expiresAt`, sans renouvellement).
  */
 export async function updateUserSubscription(
   db: Db,
   userId: string,
   status: SubscriptionStatus,
   expiresAt: Date | null,
+  cancelAtPeriodEnd = false,
 ): Promise<void> {
   await db
     .update(users)
-    .set({ subscriptionStatus: status, subscriptionExpiresAt: expiresAt })
+    .set({
+      subscriptionStatus: status,
+      subscriptionExpiresAt: expiresAt,
+      subscriptionCancelAtPeriodEnd: cancelAtPeriodEnd,
+    })
     .where(eq(users.id, userId));
+}
+
+export interface SubscriptionInfo {
+  /** L'utilisateur voit-il actuellement le contenu premium ? (statut actif ET échéance non dépassée) */
+  active: boolean;
+  status: SubscriptionStatus;
+  expiresAt: Date | null;
+  /** Résilié : l'accès court jusqu'à `expiresAt` puis s'arrête, pas de renouvellement. */
+  cancelAtPeriodEnd: boolean;
+}
+
+/** État d'abonnement détaillé pour l'affichage (page /compte, /abonnement). */
+export async function getSubscriptionInfo(db: Db, userId: string): Promise<SubscriptionInfo> {
+  const user = await getUserById(db, userId);
+  const expiresAt = user?.subscriptionExpiresAt ?? null;
+  const active = user?.subscriptionStatus === 'active' && (!expiresAt || expiresAt > new Date());
+  return {
+    active,
+    status: user?.subscriptionStatus ?? 'none',
+    expiresAt,
+    cancelAtPeriodEnd: user?.subscriptionCancelAtPeriodEnd ?? false,
+  };
 }
 
 /**

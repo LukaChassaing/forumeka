@@ -1,10 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { hasActiveSubscription } from '@forumeka/db';
+import { getSubscriptionInfo } from '@forumeka/db';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { PLANS } from '@/lib/stripe';
 import { createCheckoutSession, openBillingPortal } from './actions';
+
+function formatDateFr(date: Date): string {
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export default async function AbonnementPage({
   searchParams,
@@ -14,29 +18,44 @@ export default async function AbonnementPage({
   const session = await auth();
   if (!session?.user?.id) redirect('/connexion?next=/abonnement');
 
-  const subscribed = await hasActiveSubscription(db, session.user.id);
+  const subscription = await getSubscriptionInfo(db, session.user.id);
   const { abonnement } = await searchParams;
 
-  if (subscribed) {
+  if (subscription.active) {
+    const resilie = subscription.cancelAtPeriodEnd && subscription.expiresAt;
     return (
       <div>
         <Link href="/compte" className="text-sm text-ink-500 hover:text-blue-700">
           ← Mon compte
         </Link>
         <div className="mt-6 rounded-xl border border-ink-100 bg-white p-6 shadow-sm">
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
-            Premium actif
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              resilie ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
+            }`}
+          >
+            {resilie ? 'Premium — résilié' : 'Premium actif'}
           </span>
-          <p className="mt-4 text-ink-700">
-            Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes, sans
-            limite.
-          </p>
+          {resilie ? (
+            <p className="mt-4 text-ink-700">
+              Abonnement résilié. Tu gardes l&apos;accès Premium jusqu&apos;au{' '}
+              <strong>{formatDateFr(subscription.expiresAt!)}</strong>, sans renouvellement.
+            </p>
+          ) : (
+            <p className="mt-4 text-ink-700">
+              Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes, sans
+              limite.
+              {subscription.expiresAt && (
+                <> Prochain renouvellement le {formatDateFr(subscription.expiresAt)}.</>
+              )}
+            </p>
+          )}
           <form action={openBillingPortal} className="mt-4">
             <button
               type="submit"
               className="inline-flex items-center rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-900 hover:bg-ink-50"
             >
-              Gérer mon abonnement
+              {resilie ? 'Réactiver / gérer' : 'Gérer mon abonnement'}
             </button>
           </form>
         </div>

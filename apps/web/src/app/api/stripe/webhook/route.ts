@@ -11,10 +11,21 @@ import { getStripe } from '@/lib/stripe';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Fin de la période payée en cours. Depuis l'API 2025, l'info est portée par les items, pas la sub. */
-function subscriptionPeriodEnd(sub: Stripe.Subscription): Date | null {
-  const end = sub.items?.data?.[0]?.current_period_end;
-  return typeof end === 'number' ? new Date(end * 1000) : null;
+/**
+ * Date de fin d'accès. Si une résiliation est programmée (`cancel_at`), c'est cette date ; sinon la
+ * fin de la période payée en cours (portée par les items depuis l'API 2025, plus par la sub).
+ */
+function subscriptionEndDate(sub: Stripe.Subscription): Date | null {
+  const ts = sub.cancel_at ?? sub.items?.data?.[0]?.current_period_end;
+  return typeof ts === 'number' ? new Date(ts * 1000) : null;
+}
+
+/**
+ * L'abonnement ne se renouvellera pas : soit résiliation en fin de période (`cancel_at_period_end`),
+ * soit résiliation à une date fixe (`cancel_at`, ce que pose le portail de facturation Stripe).
+ */
+function willNotRenew(sub: Stripe.Subscription): boolean {
+  return sub.cancel_at_period_end === true || sub.cancel_at != null;
 }
 
 /** Résout le compte concerné (metadata.userId posé au Checkout, sinon lookup par client Stripe). */
@@ -34,7 +45,7 @@ async function applySubscription(sub: Stripe.Subscription): Promise<void> {
     return;
   }
   const status = sub.status === 'canceled' ? 'canceled' : mapStripeSubscriptionStatus(sub.status);
-  await updateUserSubscription(db, userId, status, subscriptionPeriodEnd(sub));
+  await updateUserSubscription(db, userId, status, subscriptionEndDate(sub), willNotRenew(sub));
 }
 
 export async function POST(req: Request): Promise<Response> {
