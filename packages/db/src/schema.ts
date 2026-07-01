@@ -30,6 +30,14 @@ export const crawlStatusEnum = pgEnum('crawl_status', [
   'failed',
   'skipped',
 ]);
+export const unlockTypeEnum = pgEnum('unlock_type', ['free', 'subscription']);
+export const consultationTypeEnum = pgEnum('consultation_type', ['probleme', 'piste']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'none',
+  'active',
+  'canceled',
+  'past_due',
+]);
 
 /** Schéma Auth.js (DrizzleAdapter) — magic link Resend, voir §11/§12 architecture. */
 export const users = pgTable('users', {
@@ -39,6 +47,10 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified', { withTimezone: true }),
   image: text('image'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /** Monétisation V1 (§ monetization.md) — abonnement Stripe. */
+  stripeCustomerId: text('stripe_customer_id').unique(),
+  subscriptionStatus: subscriptionStatusEnum('subscription_status').notNull().default('none'),
+  subscriptionExpiresAt: timestamp('subscription_expires_at', { withTimezone: true }),
 });
 
 export const accounts = pgTable(
@@ -256,3 +268,38 @@ export const discoverRuns = pgTable('discover_runs', {
   pagesScanned: integer('pages_scanned').notNull(),
   threadsFound: integer('threads_found').notNull(),
 });
+
+/** Historique de consultation (page /compte, sidebar) — un upsert par visite, dédupliqué. */
+export const consultations = pgTable(
+  'consultations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: consultationTypeEnum('type').notNull(),
+    refId: uuid('ref_id').notNull(),
+    titre: text('titre').notNull(),
+    href: text('href').notNull(),
+    vuLe: timestamp('vu_le', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.type, table.refId)],
+);
+
+/** Déverrouillages de pistes (gratuits à vie ou via abonnement actif) — § monetization.md. */
+export const unlocks = pgTable(
+  'unlocks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    pisteId: uuid('piste_id')
+      .notNull()
+      .references(() => pistes.id, { onDelete: 'cascade' }),
+    type: unlockTypeEnum('type').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.pisteId)],
+);

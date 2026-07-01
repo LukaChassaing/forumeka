@@ -39,6 +39,7 @@ export default async function HomePage() {
     {
       value: nbForums,
       label: `forum${Number(nbForums) === 1 ? '' : 's'} sourcé${Number(nbForums) === 1 ? '' : 's'}`,
+      href: '/forums',
     },
     {
       value: nbProblemes,
@@ -48,6 +49,7 @@ export default async function HomePage() {
     {
       value: nbVehicules,
       label: `véhicule${Number(nbVehicules) === 1 ? '' : 's'} couvert${Number(nbVehicules) === 1 ? '' : 's'}`,
+      href: '/vehicules',
     },
     {
       value: nbConfirmees,
@@ -61,7 +63,7 @@ export default async function HomePage() {
         <Image src="/logo.png" alt="Forumeka" width={48} height={48} className="rounded-xl" />
         <div>
           <h1 className="text-3xl font-bold text-ink-900">Forumeka</h1>
-          <p className="text-sm text-ink-500">Diagnostic auto collaboratif</p>
+          <p className="text-sm text-ink-500">Diagnostic automobile collaboratif</p>
         </div>
       </div>
 
@@ -118,12 +120,25 @@ export default async function HomePage() {
       </div>
 
       <div className="mt-10 grid grid-cols-2 gap-3 border-t border-ink-100 pt-6 sm:grid-cols-3">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-lg bg-white p-3 text-center shadow-sm">
-            <p className="text-2xl font-bold text-ink-900">{s.value}</p>
-            <p className="mt-1 text-xs text-ink-500">{s.label}</p>
-          </div>
-        ))}
+        {stats.map((s) =>
+          s.href ? (
+            <Link
+              key={s.label}
+              href={s.href}
+              className="group rounded-lg bg-white p-3 text-center shadow-sm transition hover:shadow-md"
+            >
+              <p className="text-2xl font-bold text-ink-900 group-hover:text-blue-700">
+                {s.value}
+              </p>
+              <p className="mt-1 text-xs text-ink-500">{s.label}</p>
+            </Link>
+          ) : (
+            <div key={s.label} className="rounded-lg bg-white p-3 text-center shadow-sm">
+              <p className="text-2xl font-bold text-ink-900">{s.value}</p>
+              <p className="mt-1 text-xs text-ink-500">{s.label}</p>
+            </div>
+          ),
+        )}
       </div>
     </div>
   );
