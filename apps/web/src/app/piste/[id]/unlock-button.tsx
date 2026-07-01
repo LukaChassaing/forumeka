@@ -49,7 +49,7 @@ export function UnlockButton({
             setError(null);
             const result = await unlockPisteGratuit(pisteId);
             if (!result.ok) {
-              setError("Plus de déverrouillage gratuit disponible.");
+              setError('Plus de déverrouillage gratuit disponible.');
               return;
             }
             router.refresh();

@@ -127,9 +127,7 @@ export default async function HomePage() {
               href={s.href}
               className="group rounded-lg bg-white p-3 text-center shadow-sm transition hover:shadow-md"
             >
-              <p className="text-2xl font-bold text-ink-900 group-hover:text-blue-700">
-                {s.value}
-              </p>
+              <p className="text-2xl font-bold text-ink-900 group-hover:text-blue-700">{s.value}</p>
               <p className="mt-1 text-xs text-ink-500">{s.label}</p>
             </Link>
           ) : (

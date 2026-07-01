@@ -13,8 +13,8 @@ export default function ConfidentialitePage() {
           <h2 className="font-semibold text-ink-900">Données collectées</h2>
           <p className="mt-1">
             Adresse email (création de compte et connexion par lien magique), historique de
-            recherche et de consultation des pistes/problèmes, déverrouillages effectués, et
-            statut d&apos;abonnement. Aucun mot de passe n&apos;est stocké.
+            recherche et de consultation des pistes/problèmes, déverrouillages effectués, et statut
+            d&apos;abonnement. Aucun mot de passe n&apos;est stocké.
           </p>
         </section>
 
@@ -31,8 +31,8 @@ export default function ConfidentialitePage() {
           <h2 className="font-semibold text-ink-900">Finalité</h2>
           <p className="mt-1">
             Ces données servent uniquement à faire fonctionner le service : authentification,
-            gestion de l&apos;abonnement, et personnalisation (historique de consultation).
-            Aucune donnée n&apos;est vendue à des tiers.
+            gestion de l&apos;abonnement, et personnalisation (historique de consultation). Aucune
+            donnée n&apos;est vendue à des tiers.
           </p>
         </section>
 

@@ -14,13 +14,13 @@ bas).
 
 ## Gating
 
-| Élément                                                  | Visible sans payer ?                                                     |
-| -------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `problème.titre` + véhicule + symptômes                  | Toujours (SEO, jamais touché)                                            |
-| Intro "X pistes connues, Y confirmées par la communauté" | Toujours (accroche, ne révèle pas laquelle)                              |
-| Titre de toutes les pistes                               | Toujours, **ordre aléatoire** (`ORDER BY random()` à chaque affichage)   |
-| Badge de fiabilité (Très/Probable/Peu probable)          | Verrouillé — remplacé par un badge neutre **"🔒 Voir la fiabilité"**     |
-| Sources forum (extrait, lien thread, nb confirmations)   | Verrouillé                                                               |
+| Élément                                                  | Visible sans payer ?                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `problème.titre` + véhicule + symptômes                  | Toujours (SEO, jamais touché)                                          |
+| Intro "X pistes connues, Y confirmées par la communauté" | Toujours (accroche, ne révèle pas laquelle)                            |
+| Titre de toutes les pistes                               | Toujours, **ordre aléatoire** (`ORDER BY random()` à chaque affichage) |
+| Badge de fiabilité (Très/Probable/Peu probable)          | Verrouillé — remplacé par un badge neutre **"🔒 Voir la fiabilité"**   |
+| Sources forum (extrait, lien thread, nb confirmations)   | Verrouillé                                                             |
 
 Payer débloque deux choses : l'ordre/fiabilité réelle des pistes, et la preuve forum (sources).
 Le déverrouillage (gratuit ou abonnement) est **par piste**, pas par problème entier.

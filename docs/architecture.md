@@ -157,14 +157,14 @@ Pré-calcule les compteurs forum/app par piste pour des requêtes rapides. Refre
 
 Tracke les déverrouillages de pistes — gratuits à vie ou via abonnement actif. Voir [monetization.md](monetization.md).
 
-| Colonne      | Type             | Notes                    |
-| ------------ | ---------------- | ------------------------ |
-| `id`         | UUID PK          |                          |
-| `user_id`    | UUID FK          |                          |
-| `piste_id`   | UUID FK          |                          |
-| `type`       | ENUM             | `free` / `subscription`  |
-| `expires_at` | TIMESTAMPTZ NULL |                          |
-| `created_at` | TIMESTAMPTZ      |                          |
+| Colonne      | Type             | Notes                   |
+| ------------ | ---------------- | ----------------------- |
+| `id`         | UUID PK          |                         |
+| `user_id`    | UUID FK          |                         |
+| `piste_id`   | UUID FK          |                         |
+| `type`       | ENUM             | `free` / `subscription` |
+| `expires_at` | TIMESTAMPTZ NULL |                         |
+| `created_at` | TIMESTAMPTZ      |                         |
 
 Contrainte unique `(user_id, piste_id)`. Quota de 5 déverrouillages `free` à vie par compte, compté par requête plutôt que stocké sur `users` (évite la désync).
 
@@ -172,15 +172,15 @@ Contrainte unique `(user_id, piste_id)`. Quota de 5 déverrouillages `free` à v
 
 Une ligne par (utilisateur, type, cible) consultée, upsertée à chaque visite — alimente la sidebar "Consulté récemment" sur `/compte` et le layout global.
 
-| Colonne   | Type        | Notes                            |
-| --------- | ----------- | --------------------------------- |
-| `id`      | UUID PK     |                                    |
-| `user_id` | UUID FK     |                                    |
-| `type`    | ENUM        | `probleme` / `piste`              |
-| `ref_id`  | UUID        | id du problème/piste              |
-| `titre`   | TEXT        | snapshot au moment de la visite   |
-| `href`    | TEXT        | chemin de la page                 |
-| `vu_le`   | TIMESTAMPTZ |                                    |
+| Colonne   | Type        | Notes                           |
+| --------- | ----------- | ------------------------------- |
+| `id`      | UUID PK     |                                 |
+| `user_id` | UUID FK     |                                 |
+| `type`    | ENUM        | `probleme` / `piste`            |
+| `ref_id`  | UUID        | id du problème/piste            |
+| `titre`   | TEXT        | snapshot au moment de la visite |
+| `href`    | TEXT        | chemin de la page               |
+| `vu_le`   | TIMESTAMPTZ |                                 |
 
 Contrainte unique `(user_id, type, ref_id)` — une visite répétée met juste à jour `vu_le`.
 
