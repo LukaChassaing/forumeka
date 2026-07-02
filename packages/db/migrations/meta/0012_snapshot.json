@@ -1,6 +1,6 @@
 {
-  "id": "390ec714-5e9b-4329-a50b-7552344116eb",
-  "prevId": "a885706a-0c0a-4565-9e2b-9efc551930b6",
+  "id": "098473d7-fb7b-4688-951f-2a626ba6347e",
+  "prevId": "b6c2d41d-c4ee-4b4d-afcd-9b777ff99d25",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -242,6 +242,80 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.consultations": {
+      "name": "consultations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "consultation_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ref_id": {
+          "name": "ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "titre": {
+          "name": "titre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "href": {
+          "name": "href",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vu_le": {
+          "name": "vu_le",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "consultations_user_id_users_id_fk": {
+          "name": "consultations_user_id_users_id_fk",
+          "tableFrom": "consultations",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "consultations_user_id_type_ref_id_unique": {
+          "name": "consultations_user_id_type_ref_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["user_id", "type", "ref_id"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1297,6 +1371,13 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "subscription_cancel_at_period_end": {
+          "name": "subscription_cancel_at_period_end",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
@@ -1356,6 +1437,11 @@
     }
   },
   "enums": {
+    "public.consultation_type": {
+      "name": "consultation_type",
+      "schema": "public",
+      "values": ["probleme", "piste"]
+    },
     "public.crawl_status": {
       "name": "crawl_status",
       "schema": "public",

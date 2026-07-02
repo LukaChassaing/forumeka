@@ -66,7 +66,7 @@
 - [x] Page piste : sources reformatées, fil d'Ariane, extrait en italique
 - [x] Header sticky avec recherche permanente (sauf sur l'accueil)
 
-## Monétisation V1 🟡 gating en place, Stripe à faire
+## Monétisation V1 ✅ Stripe implémenté (config à renseigner)
 
 Scope détaillé : [monetization.md](monetization.md).
 
@@ -76,8 +76,9 @@ Scope détaillé : [monetization.md](monetization.md).
 - [x] Ordre aléatoire des pistes sur la page diagnostic pour les non-abonnés (`ORDER BY random()`), ordre réel réservé aux abonnés
 - [x] 5 déverrouillages gratuits à vie par compte, consommés un par un (`/piste/[id]`)
 - [x] Page `/compte` (statut abonnement, compteur gratuits, historique des déverrouillages)
-- [ ] Intégration Stripe Checkout (mensuel 4,99€ / annuel 39,99€) + PayPal comme moyen de paiement natif — `/abonnement` est un lien mort en attendant
-- [ ] Webhook Stripe pour mettre à jour `users.subscription_status`/`subscription_expires_at`
+- [x] Intégration Stripe Checkout (mensuel 4,99€ / annuel 39,99€) + PayPal comme moyen de paiement natif — page `/abonnement`, Checkout hébergé, portail de facturation
+- [x] Webhook Stripe (`/api/stripe/webhook`, signature vérifiée) qui met à jour `users.subscription_status`/`subscription_expires_at`
+- [ ] **Config Stripe à renseigner** : clés `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET`, Prices `price_...`, endpoint webhook, PayPal activé (voir monetization.md § Configuration Stripe)
 - [ ] CTA "piste sans confirmation → forum"
 
 ## Compte utilisateur et navigation ✅ mergé
@@ -93,7 +94,7 @@ Scope détaillé : [monetization.md](monetization.md).
 
 Ordre de priorité acté : **Stripe → Cloudflare → autres forums → ingestion de contenu.**
 
-1. **Intégrer Stripe** (Checkout + webhook) pour rendre l'abonnement réellement payant — c'est le seul morceau qui manque pour que la monétisation V1 soit complète (`/abonnement` est un lien mort en attendant).
+1. ~~**Intégrer Stripe** (Checkout + webhook)~~ ✅ code livré — reste à **renseigner la config Stripe** (clés, Prices, endpoint webhook, PayPal) et à tester un paiement bout-en-bout en prod.
 2. **Lever le blocage Cloudflare sur Caradisiac** (`fetch failed` confirmé, §11ter de l'archi) pour récupérer cette source, la plus riche du marché FR.
 3. **Dresser une liste de forums cibles** (au-delà de Caradisiac/forum4x4.org) — marques généralistes, forums spécialisés par modèle, forums anglophones — pour élargir la couverture.
 4. **Indexer le maximum de contenu** sur ces forums via le pipeline existant (discover → extract → ingest), en continu, puis appliquer le seed (30 threads actuels + ce qui suit) sur la branche Neon de **prod**.

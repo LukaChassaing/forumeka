@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
-  hasActiveSubscription,
+  getSubscriptionInfo,
   countFreeUnlocksUsed,
   FREE_UNLOCKS_PER_USER,
   getUnlocksForUser,
 } from '@forumeka/db';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
+import { openBillingPortal } from '@/app/abonnement/actions';
 
 function formatDateFr(date: Date): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -18,11 +19,12 @@ export default async function ComptePage() {
   if (!session?.user?.id) redirect('/connexion');
 
   const userId = session.user.id;
-  const [subscribed, freeUnlocksUsed, unlocksHistory] = await Promise.all([
-    hasActiveSubscription(db, userId),
+  const [subscription, freeUnlocksUsed, unlocksHistory] = await Promise.all([
+    getSubscriptionInfo(db, userId),
     countFreeUnlocksUsed(db, userId),
     getUnlocksForUser(db, userId),
   ]);
+  const subscribed = subscription.active;
   const freeUnlocksRemaining = Math.max(0, FREE_UNLOCKS_PER_USER - freeUnlocksUsed);
   const label = session.user.name ?? session.user.email ?? 'Mon compte';
   const showEmailSeparately = session.user.name && session.user.email;
@@ -42,16 +44,45 @@ export default async function ComptePage() {
           <p className="text-sm font-medium uppercase tracking-wide text-ink-500">Abonnement</p>
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              subscribed ? 'bg-green-100 text-green-800' : 'bg-ink-100 text-ink-600'
+              subscribed && subscription.cancelAtPeriodEnd
+                ? 'bg-amber-100 text-amber-800'
+                : subscribed
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-ink-100 text-ink-600'
             }`}
           >
-            {subscribed ? 'Premium actif' : 'Compte gratuit'}
+            {subscribed
+              ? subscription.cancelAtPeriodEnd
+                ? 'Premium — résilié'
+                : 'Premium actif'
+              : 'Compte gratuit'}
           </span>
         </div>
         {subscribed ? (
-          <p className="mt-3 text-sm text-ink-700">
-            Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes.
-          </p>
+          <>
+            {subscription.cancelAtPeriodEnd && subscription.expiresAt ? (
+              <p className="mt-3 text-sm text-ink-700">
+                Abonnement résilié. Tu gardes l&apos;accès Premium jusqu&apos;au{' '}
+                <strong>{formatDateFr(subscription.expiresAt)}</strong>, sans renouvellement ni
+                nouveau prélèvement.
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-ink-700">
+                Tu as accès à la fiabilité réelle et aux sources forum de toutes les pistes.
+                {subscription.expiresAt && (
+                  <> Prochain renouvellement le {formatDateFr(subscription.expiresAt)}.</>
+                )}
+              </p>
+            )}
+            <form action={openBillingPortal} className="mt-4">
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-900 hover:bg-ink-50"
+              >
+                {subscription.cancelAtPeriodEnd ? 'Réactiver / gérer' : 'Gérer mon abonnement'}
+              </button>
+            </form>
+          </>
         ) : (
           <>
             <p className="mt-3 text-sm text-ink-700">
@@ -110,9 +141,7 @@ export default async function ComptePage() {
                       Problème : {u.problemeTitre}
                     </Link>
                   </div>
-                  <span className="shrink-0 text-xs text-ink-400">
-                    {formatDateFr(u.createdAt)}
-                  </span>
+                  <span className="shrink-0 text-xs text-ink-400">{formatDateFr(u.createdAt)}</span>
                 </li>
               ))}
             </ul>

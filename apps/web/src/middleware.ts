@@ -19,5 +19,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
+  // `api/stripe/webhook` est appelé par Stripe (non authentifié) : il ne doit pas passer par l'auth.
+  matcher: ['/((?!api/auth|api/stripe/webhook|_next/static|_next/image|favicon.ico).*)'],
 };

@@ -41,8 +41,8 @@ export default function MentionsLegalesPage() {
           <p className="mt-1">
             L&apos;ensemble des éléments de Forumeka (marque, logo, code, design) est la propriété
             de l&apos;éditeur, sauf mention contraire. Le contenu des pistes de diagnostic est
-            généré à partir de discussions publiques de forums automobiles tiers, créditées et
-            liées à leur source.
+            généré à partir de discussions publiques de forums automobiles tiers, créditées et liées
+            à leur source.
           </p>
         </section>
       </div>

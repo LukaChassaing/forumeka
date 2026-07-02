@@ -8,7 +8,10 @@ import {
   threadPisteMentions,
   unlocks,
   consultations,
+  users,
 } from './schema.js';
+
+export type SubscriptionStatus = 'none' | 'active' | 'canceled' | 'past_due';
 
 export interface ProblemeSearchResult {
   id: string;
@@ -331,4 +334,91 @@ export async function getRecentConsultations(
     .orderBy(desc(consultations.vuLe))
     .limit(limit);
   return rows;
+}
+
+// --- Abonnement Stripe (§ monetization.md) -------------------------------------------------------
+
+export async function getUserById(db: Db, userId: string) {
+  return db.query.users.findFirst({ where: (u, { eq: eqOp }) => eqOp(u.id, userId) });
+}
+
+/** Retrouve le compte à partir de l'ID client Stripe (webhook subscription.updated/deleted). */
+export async function getUserByStripeCustomerId(db: Db, stripeCustomerId: string) {
+  return db.query.users.findFirst({
+    where: (u, { eq: eqOp }) => eqOp(u.stripeCustomerId, stripeCustomerId),
+  });
+}
+
+/** Lie un compte à son client Stripe (première souscription). */
+export async function setUserStripeCustomerId(
+  db: Db,
+  userId: string,
+  stripeCustomerId: string,
+): Promise<void> {
+  await db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId));
+}
+
+/**
+ * Met à jour l'état d'abonnement d'un compte (appelé par le webhook Stripe uniquement — jamais
+ * de confiance dans le retour client de Checkout). `expiresAt` = fin de la période payée en cours ;
+ * `cancelAtPeriodEnd` = résiliation programmée (accès conservé jusqu'à `expiresAt`, sans renouvellement).
+ */
+export async function updateUserSubscription(
+  db: Db,
+  userId: string,
+  status: SubscriptionStatus,
+  expiresAt: Date | null,
+  cancelAtPeriodEnd = false,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({
+      subscriptionStatus: status,
+      subscriptionExpiresAt: expiresAt,
+      subscriptionCancelAtPeriodEnd: cancelAtPeriodEnd,
+    })
+    .where(eq(users.id, userId));
+}
+
+export interface SubscriptionInfo {
+  /** L'utilisateur voit-il actuellement le contenu premium ? (statut actif ET échéance non dépassée) */
+  active: boolean;
+  status: SubscriptionStatus;
+  expiresAt: Date | null;
+  /** Résilié : l'accès court jusqu'à `expiresAt` puis s'arrête, pas de renouvellement. */
+  cancelAtPeriodEnd: boolean;
+}
+
+/** État d'abonnement détaillé pour l'affichage (page /compte, /abonnement). */
+export async function getSubscriptionInfo(db: Db, userId: string): Promise<SubscriptionInfo> {
+  const user = await getUserById(db, userId);
+  const expiresAt = user?.subscriptionExpiresAt ?? null;
+  const active = user?.subscriptionStatus === 'active' && (!expiresAt || expiresAt > new Date());
+  return {
+    active,
+    status: user?.subscriptionStatus ?? 'none',
+    expiresAt,
+    cancelAtPeriodEnd: user?.subscriptionCancelAtPeriodEnd ?? false,
+  };
+}
+
+/**
+ * Traduit un statut d'abonnement Stripe vers l'enum interne. Stripe expose plus de valeurs que ce
+ * qu'on suit : on ne distingue que actif / en défaut de paiement / annulé (§ monetization.md).
+ */
+export function mapStripeSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
+  switch (stripeStatus) {
+    case 'active':
+    case 'trialing':
+      return 'active';
+    case 'past_due':
+    case 'unpaid':
+      return 'past_due';
+    case 'canceled':
+    case 'incomplete_expired':
+      return 'canceled';
+    default:
+      // incomplete, paused, etc. : pas encore payant, on reste sur "none".
+      return 'none';
+  }
 }
