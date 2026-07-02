@@ -10,7 +10,7 @@ const LINKS = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-ink-100 py-8">
-      <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 px-6 text-sm text-ink-500 sm:flex-row sm:justify-between">
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 text-sm text-ink-500 sm:flex-row sm:justify-between">
         <p>© {new Date().getFullYear()} Forumeka</p>
         <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
           {LINKS.map((l) => (
