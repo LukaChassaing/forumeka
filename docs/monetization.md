@@ -48,6 +48,18 @@ Variables d'env (voir `.env.example`) : `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SEC
 3. Activer **PayPal** comme moyen de paiement dans les réglages Stripe (aucun code supplémentaire).
 4. En local : `stripe listen --forward-to localhost:3000/api/stripe/webhook` fournit un `whsec_` de test.
 
+## Checklist pré-lancement (Stripe live)
+
+- [ ] **Activer le compte Stripe** : renseigner raison sociale, adresse, SIREN, coordonnées bancaires.
+- [ ] **Mentions légales sur les factures** : Dashboard → Settings → Invoice template → raison sociale, adresse, SIREN, régime de TVA (« TVA non applicable, art. 293 B du CGI » si franchise en base), footer légal.
+- [ ] **Emails de facture automatiques** : Dashboard → Settings → Customer emails → activer « Successful payments ». Le client reçoit sa facture par mail à chaque prélèvement.
+- [ ] **Régime de TVA** : configurer Stripe Tax (franchise en base ou assujetti) pour que les montants soient corrects.
+- [ ] **Créer 2 Prices LIVE** (4,99 €/mois, 39,99 €/an) → renseigner `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` en prod.
+- [ ] **Webhook prod** : créer l'endpoint `https://<domaine>/api/stripe/webhook` dans le Dashboard → renseigner `STRIPE_WEBHOOK_SECRET` en prod.
+- [ ] **Variables d'env Vercel** : `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`.
+- [ ] **Vérifier `DATABASE_URL` sur Vercel** : doit pointer sur `ep-lively-firefly` (la seule base active).
+- [ ] **Activer PayPal** comme moyen de paiement dans les réglages Stripe (aucun code supplémentaire).
+
 ## Reste à faire (post-V1)
 
 - CTA "piste sans confirmation → forum" (page piste), toujours non implémenté.
