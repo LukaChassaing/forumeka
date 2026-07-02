@@ -51,6 +51,10 @@ export const users = pgTable('users', {
   stripeCustomerId: text('stripe_customer_id').unique(),
   subscriptionStatus: subscriptionStatusEnum('subscription_status').notNull().default('none'),
   subscriptionExpiresAt: timestamp('subscription_expires_at', { withTimezone: true }),
+  /** Résiliation programmée en fin de période : l'accès reste actif jusqu'à `subscriptionExpiresAt` mais ne se renouvellera pas. */
+  subscriptionCancelAtPeriodEnd: boolean('subscription_cancel_at_period_end')
+    .notNull()
+    .default(false),
 });
 
 export const accounts = pgTable(

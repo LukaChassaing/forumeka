@@ -20,9 +20,7 @@ export async function HistorySidebar() {
 
   return (
     <aside className="fixed right-6 top-20 hidden w-64 xl:block">
-      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
-        Consulté récemment
-      </p>
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">Consulté récemment</p>
       <ul className="mt-3 space-y-1">
         {history.map((h) => (
           <li key={`${h.type}-${h.refId}`}>
