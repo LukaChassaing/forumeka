@@ -11,13 +11,11 @@ export function SiteHeader({ accountSlot }: { accountSlot?: React.ReactNode }) {
 
   return (
     <header className="sticky top-0 z-10 border-b border-ink-100 bg-beige-50/95 backdrop-blur">
-      <div className="mx-auto flex max-w-2xl items-center gap-3 px-6 py-3">
-        {!isHome && (
-          <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-ink-900">
-            <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
-            Forumeka
-          </Link>
-        )}
+      <div className={`mx-auto flex items-center gap-3 px-6 py-3 ${isHome ? 'max-w-5xl' : 'max-w-2xl'}`}>
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold text-ink-900">
+          <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
+          Forumeka
+        </Link>
         {!isHome && (
           <form action="/recherche" method="get" className="flex flex-1 gap-2">
             <input
